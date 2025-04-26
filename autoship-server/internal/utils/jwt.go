@@ -56,3 +56,21 @@ func GenerateJWT(userID, email string) (string, error) {
 
 	return tokenString, nil
 }
+
+// VerifyJWT verifies a token and returns the claims
+func VerifyJWT(tokenStr string) (*Claims, error) {
+	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		return jwtKey, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	claims, ok := token.Claims.(*Claims)
+	if !ok || !token.Valid {
+		return nil, err
+	}
+
+	return claims, nil
+}
