@@ -85,3 +85,64 @@ func Login(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{"message": "Login successful", "token": token})
 }
+// GitHubLogin redirects the user to GitHub's OAuth consent page
+func GitHubLogin(c *fiber.Ctx) error {
+	url := utils.GetGitHubAuthURL()
+	return c.Redirect(url, fiber.StatusTemporaryRedirect)
+}
+// GitHubCallback handles GitHub's redirect with the auth code
+func GitHubCallback(c *fiber.Ctx) error {
+	code := c.Query("code")
+	if code == "" {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Authorization code not provided"})
+	}
+
+	// Exchange the code for an access token
+	accessToken, err := utils.ExchangeCodeForAccessToken(code)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to exchange code for token"})
+	}
+
+	// Get the GitHub user info
+	userInfo, err := utils.GetGitHubUserInfo(accessToken)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to get user info from GitHub"})
+	}
+
+	// Extract email (or login) from userInfo
+	email, ok := userInfo["email"].(string)
+	if !ok || email == "" {
+		// fallback if email is private
+		email = userInfo["login"].(string) + "@github.com"
+	}
+
+	// Check if user already exists
+	var existingUser models.User
+	err = db.UserCollection.FindOne(context.TODO(), bson.M{"email": email}).Decode(&existingUser)
+	if err != nil {
+		// User not found, create new one
+		newUser := models.User{
+			Email:     email,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			Password:  "", // No password for GitHub login
+		}
+		insertResult, err := db.UserCollection.InsertOne(context.TODO(), newUser)
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to create user"})
+		}
+		newUser.ID = insertResult.InsertedID.(primitive.ObjectID)
+		existingUser = newUser
+	}
+
+	// Generate JWT token
+	token, err := utils.GenerateJWT(existingUser.ID.Hex(), existingUser.Email)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to generate JWT"})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "GitHub login successful",
+		"token":   token,
+	})
+}
