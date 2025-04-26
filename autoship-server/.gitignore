@@ -1,0 +1,39 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+
+# Output from go build
+/server
+*.out
+
+# Dependency directories
+vendor/
+
+# Go modules cache (if any local builds pollute)
+go.sum
+
+# IDE/editor configs
+.vscode/
+.idea/
+*.swp
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Env files
+.env
+
+# Static hosted projects (if dynamically built)
+static/
+
+# Temp files
+*.tmp
+*.bak
