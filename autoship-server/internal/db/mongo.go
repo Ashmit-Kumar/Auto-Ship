@@ -11,11 +11,15 @@ import (
 
 var Client *mongo.Client
 var UserCollection *mongo.Collection
+var mongoURI string
+
+// SetMongoURI allows you to set the MongoDB URI
+func SetMongoURI(uri string) {
+	mongoURI = uri
+}
 
 // Connect to MongoDB
 func Connect() {
-	// Get MongoDB URI from environment variables
-	mongoURI := os.Getenv("MONGO_URI")
 	if mongoURI == "" {
 		log.Fatal("MONGO_URI is not set")
 	}
