@@ -2,12 +2,15 @@ package utils
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/joho/godotenv"
 )
 
-var jwtKey = []byte("secret_key")
+var jwtKey []byte
+var jwtExpiration time.Duration
 
 // Claims struct for JWT
 type Claims struct {
@@ -16,9 +19,27 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
+// LoadEnv loads environment variables from the .env file
+func LoadEnv() error {
+	if err := godotenv.Load(); err != nil {
+		return fmt.Errorf("Error loading .env file: %w", err)
+	}
+
+	// Set JWT secret key and expiration time from environment variables
+	jwtKey = []byte(os.Getenv("JWT_SECRET"))
+
+	expiration, err := time.ParseDuration(os.Getenv("JWT_EXPIRATION"))
+	if err != nil {
+		return fmt.Errorf("Error parsing JWT_EXPIRATION: %w", err)
+	}
+	jwtExpiration = expiration
+
+	return nil
+}
+
 // GenerateJWT generates a new JWT token
 func GenerateJWT(userID, email string) (string, error) {
-	expirationTime := time.Now().Add(24 * time.Hour)
+	expirationTime := time.Now().Add(jwtExpiration)
 	claims := &Claims{
 		UserID: userID,
 		Email:  email,
