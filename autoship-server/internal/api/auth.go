@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ashmit123/Auto-Ship/autoship-server/internal/db"
-	"github.com/ashmit123/Auto-Ship/autoship-server/internal/models"
-	"github.com/ashmit123/Auto-Ship/autoship-server/internal/utils"
+	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/db"
+	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/models"
+	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/utils"
 	"github.com/gofiber/fiber/v2"
 	"golang.org/x/crypto/bcrypt"
 	"go.mongodb.org/mongo-driver/bson"
