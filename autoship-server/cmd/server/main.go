@@ -48,7 +48,9 @@ func main() {
 	// Routes
 	app.Post("/signup", api.Signup)
 	app.Post("/login", api.Login)
-
+	app.Get("/auth/github", api.GitHubLogin)
+	app.Get("/auth/github/callback", api.GitHubCallback)
+	
 	// Protected routes
 	app.Get("/protected", middleware.IsAuthenticated, func(c *fiber.Ctx) error {
 		user := c.Locals("user")
