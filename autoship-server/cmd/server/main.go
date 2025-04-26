@@ -6,7 +6,7 @@ import (
 
 	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/api"
 	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/db"
-	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/middleware"
+	// "github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/middleware"
 	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/utils" // Import utils package for JWT
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
