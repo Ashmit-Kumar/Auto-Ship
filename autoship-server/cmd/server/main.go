@@ -12,10 +12,24 @@ import (
 )
 
 func main() {
-	// Load environment variables
+	// Load environment variables from .env file
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("Error loading .env file")
 	}
+
+	// Get PORT and MONGO_URI from environment variables
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "3000" // Default to 3000 if not set in .env
+	}
+
+	// Connect to MongoDB using MONGO_URI from .env
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		log.Fatal("MONGO_URI is not set in .env file")
+	}
+	// Set MongoDB URI
+	db.SetMongoURI(mongoURI)
 
 	// Connect to MongoDB
 	db.Connect()
@@ -33,6 +47,7 @@ func main() {
 		return c.JSON(fiber.Map{"message": "Protected content", "user": user})
 	})
 
-	log.Println("🚀 Auto-Ship server running at http://localhost:3000")
-	log.Fatal(app.Listen(":3000"))
+	// Start the server
+	log.Printf("🚀 Server running on http://localhost:%s", port)
+	log.Fatal(app.Listen(":" + port))
 }
