@@ -26,24 +26,60 @@ func GetGitHubAuthURL() string {
 }
 
 // ExchangeCodeForAccessToken exchanges the authorization code for an access token
+// func ExchangeCodeForAccessToken(code string) (string, error) {
+// 	url := "https://github.com/login/oauth/access_token"
+
+// 	payload := map[string]string{
+// 		"client_id":     githubClientID,
+// 		"client_secret": githubClientSecret,
+// 		"code":          code,
+// 		"redirect_uri":  githubRedirectURI,
+// 	}
+
+// 	body, _ := json.Marshal(payload)
+
+// 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
+// 	if err != nil {
+// 		return "", err
+// 	}
+// 	req.Header.Set("Accept", "application/json")
+// 	req.Header.Set("Content-Type", "application/json")
+
+// 	client := &http.Client{}
+// 	resp, err := client.Do(req)
+// 	if err != nil {
+// 		return "", err
+// 	}
+// 	defer resp.Body.Close()
+
+// 	respBody, _ := ioutil.ReadAll(resp.Body)
+
+// 	var result map[string]interface{}
+// 	if err := json.Unmarshal(respBody, &result); err != nil {
+// 		return "", err
+// 	}
+
+// 	accessToken, ok := result["access_token"].(string)
+// 	if !ok {
+// 		return "", fmt.Errorf("failed to get access token")
+// 	}
+
+// 	return accessToken, nil
+// }
 func ExchangeCodeForAccessToken(code string) (string, error) {
 	url := "https://github.com/login/oauth/access_token"
 
-	payload := map[string]string{
-		"client_id":     githubClientID,
-		"client_secret": githubClientSecret,
-		"code":          code,
-		"redirect_uri":  githubRedirectURI,
-	}
+	data := fmt.Sprintf(
+		"client_id=%s&client_secret=%s&code=%s&redirect_uri=%s",
+		githubClientID, githubClientSecret, code, githubRedirectURI,
+	)
 
-	body, _ := json.Marshal(payload)
-
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", url, bytes.NewBufferString(data))
 	if err != nil {
 		return "", err
 	}
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded") // <-- Important!
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -61,7 +97,7 @@ func ExchangeCodeForAccessToken(code string) (string, error) {
 
 	accessToken, ok := result["access_token"].(string)
 	if !ok {
-		return "", fmt.Errorf("failed to get access token")
+		return "", fmt.Errorf("failed to get access token: %v", result)
 	}
 
 	return accessToken, nil
