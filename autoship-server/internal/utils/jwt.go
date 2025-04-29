@@ -22,7 +22,7 @@ type Claims struct {
 // LoadEnv loads environment variables from the .env file
 func LoadEnv() error {
 	if err := godotenv.Load(); err != nil {
-		return fmt.Errorf("Error loading .env file: %w", err)
+		return fmt.Errorf("error loading .env file: %w", err)
 	}
 
 	// Set JWT secret key and expiration time from environment variables
@@ -30,7 +30,7 @@ func LoadEnv() error {
 
 	expiration, err := time.ParseDuration(os.Getenv("JWT_EXPIRATION"))
 	if err != nil {
-		return fmt.Errorf("Error parsing JWT_EXPIRATION: %w", err)
+		return fmt.Errorf("error parsing JWT_EXPIRATION: %w", err)
 	}
 	jwtExpiration = expiration
 
