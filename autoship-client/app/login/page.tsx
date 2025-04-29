@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import { LoginForm } from "@/components/login-form"
 import { Button } from "@/components/ui/button"
@@ -24,7 +26,14 @@ export default function LoginPage() {
             <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
           </div>
         </div>
-        <Button variant="outline" className="w-full" type="button">
+        <Button
+          variant="outline"
+          className="w-full"
+          type="button"
+          onClick={() => {
+            window.location.href = "http://localhost:5000/auth/github"
+          }}
+          >
           <Github className="mr-2 h-4 w-4" />
           GitHub
         </Button>
