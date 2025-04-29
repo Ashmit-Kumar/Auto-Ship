@@ -1,8 +1,11 @@
+"use client"
+
+import React from "react"
 import Link from "next/link"
 import { SignupForm } from "@/components/signup-form"
 import { Button } from "@/components/ui/button"
 import { Github, ShipIcon } from "lucide-react"
-
+// import { AuthProvider } from "@/components/auth-provider"
 export default function SignupPage() {
   return (
     <div className="container flex h-screen w-screen flex-col items-center justify-center">
@@ -16,6 +19,7 @@ export default function SignupPage() {
           <p className="text-sm text-muted-foreground">Enter your information to create an account</p>
         </div>
         <SignupForm />
+        {/* <SignupForm /> */}
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
             <span className="w-full border-t" />
@@ -24,10 +28,18 @@ export default function SignupPage() {
             <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
           </div>
         </div>
-        <Button variant="outline" className="w-full" type="button">
+        <Button
+          variant="outline"
+          className="w-full"
+          type="button"
+          onClick={() => {
+            window.location.href = "http://localhost:5000/auth/github"
+          }}
+          >
           <Github className="mr-2 h-4 w-4" />
-          Github
+          GitHub
         </Button>
+
         <p className="px-8 text-center text-sm text-muted-foreground">
           Already have an account?{" "}
           <Link href="/login" className="underline underline-offset-4 hover:text-primary">
