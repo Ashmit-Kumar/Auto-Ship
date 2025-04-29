@@ -10,6 +10,7 @@ import (
 	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/utils" // Import utils package for JWT
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 func main() {
@@ -44,7 +45,7 @@ func main() {
 
 	// Initialize Fiber app
 	app := fiber.New()
-
+	app.Use(cors.New())
 	// Routes
 	app.Post("/signup", api.Signup)
 	app.Post("/login", api.Login)
