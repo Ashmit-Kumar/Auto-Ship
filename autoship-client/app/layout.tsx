@@ -11,7 +11,7 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "GitHost - Host Your GitHub Repositories",
   description: "Easily host your GitHub repositories with a single click",
-    generator: 'v0.dev'
+    generator: 'Ashmit'
 }
 
 export default function RootLayout({
