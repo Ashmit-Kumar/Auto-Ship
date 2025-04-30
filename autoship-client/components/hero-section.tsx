@@ -23,11 +23,18 @@ export function HeroSection() {
                   Get Started
                 </Button>
               </Link>
-              <Link href="/login">
-                <Button size="lg" variant="outline" className="w-full min-[400px]:w-auto">
-                  <Github className="mr-2 h-4 w-4" />
-                  Login with GitHub
-                </Button>
+              <Link href="">
+              <Button
+                variant="outline"
+                className="w-full"
+                type="button"
+                onClick={() => {
+                  window.location.href = "http://localhost:5000/auth/github"
+                }}
+                >
+                <Github className="mr-2 h-4 w-4" />
+                GitHub
+              </Button>
               </Link>
             </div>
           </div>

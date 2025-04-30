@@ -30,12 +30,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const storedToken = localStorage.getItem("token")
     const storedUser = localStorage.getItem("user")
+  
     if (storedToken && storedUser) {
-      setToken(storedToken)
-      setUser(JSON.parse(storedUser))
+      try {
+        const parsedUser = JSON.parse(storedUser)
+        setToken(storedToken)
+        setUser(parsedUser)
+      } catch (err) {
+        console.error("Failed to parse stored user:", err)
+        localStorage.removeItem("user") // Clean up bad data
+      }
     }
+  
     setIsLoading(false)
   }, [])
+  
 
   const signup = async (name: string, email: string, password: string) => {
     const res = await fetch("http://localhost:5000/signup", {

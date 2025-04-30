@@ -110,23 +110,22 @@ func GitHubCallback(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to get user info from GitHub"})
 	}
 
-	// Extract email (or login) from userInfo
+	// Extract email (or fallback)
 	email, ok := userInfo["email"].(string)
 	if !ok || email == "" {
-		// fallback if email is private
 		email = userInfo["login"].(string) + "@github.com"
 	}
 
-	// Check if user already exists
+	// Check if user exists
 	var existingUser models.User
 	err = db.UserCollection.FindOne(context.TODO(), bson.M{"email": email}).Decode(&existingUser)
 	if err != nil {
-		// User not found, create new one
+		// Create new user
 		newUser := models.User{
 			Email:     email,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
-			Password:  "", // No password for GitHub login
+			Password:  "", // GitHub login only
 		}
 		insertResult, err := db.UserCollection.InsertOne(context.TODO(), newUser)
 		if err != nil {
@@ -136,14 +135,22 @@ func GitHubCallback(c *fiber.Ctx) error {
 		existingUser = newUser
 	}
 
-	// Generate JWT token
+	// Generate JWT
 	token, err := utils.GenerateJWT(existingUser.ID.Hex(), existingUser.Email)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to generate JWT"})
 	}
 
-	return c.JSON(fiber.Map{
-		"message": "GitHub login successful",
-		"token":   token,
-	})
+	// Optional: set as cookie instead of query param
+	// c.Cookie(&fiber.Cookie{
+	//     Name:     "auth_token",
+	//     Value:    token,
+	//     HTTPOnly: true,
+	//     Secure:   false, // true in production
+	//     Path:     "/",
+	// })
+
+	// Redirect to frontend dashboard with token
+	redirectURL := "http://localhost:3000/dashboard?token=" + token
+	return c.Redirect(redirectURL, fiber.StatusFound)
 }
