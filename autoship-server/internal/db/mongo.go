@@ -52,3 +52,6 @@ func Disconnect() {
 		log.Fatal("Error disconnecting from MongoDB: ", err)
 	}
 }
+func GetClient() *mongo.Client {
+	return Client
+}
