@@ -52,7 +52,8 @@ func main() {
 	app.Get("/auth/github", api.GitHubLogin)
 	// app.Get("/auth/github/callback", api.GitHubCallback)
 	app.Get("/github/callback", api.GitHubCallback)
-	
+	app.Post("/projects/submit", api.HandleRepoSubmit)
+
 	// Protected routes
 	app.Get("/protected", middleware.IsAuthenticated, func(c *fiber.Ctx) error {
 		user := c.Locals("user")
