@@ -1,3 +1,4 @@
+// internal/services/host.go
 package services
 
 import (
