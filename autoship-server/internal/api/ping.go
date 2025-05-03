@@ -1,3 +1,4 @@
+// internal/api/ping.go
 package api
 
 import "github.com/gofiber/fiber/v2"
