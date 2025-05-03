@@ -53,6 +53,22 @@ func main() {
 	// app.Get("/auth/github/callback", api.GitHubCallback)
 	app.Get("/github/callback", api.GitHubCallback)
 	app.Post("/projects/submit", api.HandleRepoSubmit)
+	// app.Static("/static", "./static")
+	// Optional: Redirect to index.html if someone visits just the folder
+	// Serve everything under static as public files
+app.Static("/static", "./static", fiber.Static{
+	Browse:     true,
+	Index:      "index.html",
+	Compress:   true,
+})
+
+app.Get("/autoship-server/static/:username/:repo", func(c *fiber.Ctx) error {
+	path := "./static/" + c.Params("username") + "/" + c.Params("repo") + "/index.html"
+	if _, err := os.Stat(path); err != nil {
+		return fiber.NewError(fiber.StatusNotFound, "index.html not found")
+	}
+	return c.SendFile(path)
+})
 
 	// Protected routes
 	app.Get("/protected", middleware.IsAuthenticated, func(c *fiber.Ctx) error {
