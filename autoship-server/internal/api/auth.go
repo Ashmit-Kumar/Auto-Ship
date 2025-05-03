@@ -1,3 +1,4 @@
+// internal/api/auth.go
 package api
 
 import (
