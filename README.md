@@ -1,5 +1,4 @@
-# 🚀 Mini Hosting Platform
-
+# 🚀 Auto-Ship
 This project aims to build a hosting platform similar to Vercel or Netlify. It allows users to deploy their GitHub repositories and host them with a unique live link.
 
 ---
