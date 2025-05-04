@@ -2,6 +2,7 @@
 package api
 
 import (
+	"os"
 	"fmt"
 	"strings"
 	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/services"
@@ -58,6 +59,7 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
 		if err != nil {
 			return fiber.NewError(fiber.StatusInternalServerError, "Failed to upload to S3: "+err.Error())
 		}
+		_ = os.RemoveAll(path)
 		hostedURL = url
 	} else {
 		// If it's dynamic, use a local path under '/static'
