@@ -11,6 +11,7 @@ import (
 	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/utils"
 	"github.com/gofiber/fiber/v2"
 	"log"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // RepoRequest struct defines the structure of the request for submitting a repo
@@ -86,4 +87,23 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
 		"projectType": projectType,
 		"url":         hostedURL,
 	})
+}
+// GetUserProjects fetches all projects belonging to the authenticated user
+func GetUserProjects(c *fiber.Ctx) error {
+	claims := c.Locals("user").(map[string]interface{})
+	username := claims["username"].(string)
+
+	collection := db.GetCollection("projects")
+	cursor, err := collection.Find(c.Context(), bson.M{"username": username})
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch projects"})
+	}
+	defer cursor.Close(c.Context())
+
+	var projects []bson.M
+	if err := cursor.All(c.Context(), &projects); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to decode projects"})
+	}
+
+	return c.JSON(projects)
 }
