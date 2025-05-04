@@ -1,3 +1,4 @@
+// internal/middleware/is_authenticated.go
 package middleware
 
 import (
