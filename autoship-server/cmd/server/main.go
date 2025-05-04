@@ -12,12 +12,16 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/services"
 )
 
 func main() {
 	// Load environment variables from .env file
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("Error loading .env file")
+	}
+	if err := services.InitS3(); err != nil {
+		log.Fatalf("Failed to initialize S3: %v", err)
 	}
 
 	// Load JWT_SECRET and JWT_EXPIRATION values from environment variables
