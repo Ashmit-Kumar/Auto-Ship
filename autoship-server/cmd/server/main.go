@@ -64,7 +64,7 @@ func main() {
 	app.Get("/auth/github", api.GitHubLogin)
 	// app.Get("/auth/github/callback", api.GitHubCallback)
 	app.Get("/github/callback", api.GitHubCallback)
-	app.Post("/projects/submit", api.HandleRepoSubmit)
+	app.Post("/projects/submit",  middleware.IsAuthenticated ,api.HandleRepoSubmit)
 	// Serve everything under static as public files
 	app.Static("/static", "./static", fiber.Static{
 		Browse:     true,
