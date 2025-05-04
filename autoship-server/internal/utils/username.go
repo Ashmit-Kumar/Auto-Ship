@@ -9,6 +9,7 @@ import (
 
 // ExtractUsernameFromRepoURL extracts the username from a GitHub repository URL
 func ExtractUsernameFromRepoURL(repoURL string) (string, error) {
+	fmt.Println("Extracting username from repo URL:", repoURL);
 	// Ensure the URL starts with https:// or git@
 	if !strings.HasPrefix(repoURL, "https://github.com/") && !strings.HasPrefix(repoURL, "git@github.com:") {
 		return "", fmt.Errorf("invalid GitHub repository URL")
