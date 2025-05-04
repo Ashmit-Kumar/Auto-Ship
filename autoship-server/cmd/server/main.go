@@ -71,6 +71,8 @@ func main() {
 		Index:      "index.html",
 		Compress:   true,
 	})
+	app.Get("/my-projects", middleware.IsAuthenticated, api.GetUserProjects)
+
 	// to serve static files from the static directory like scripts, styles, etc.
 	app.Get("/autoship-server/static/:username/:repo/*", func(c *fiber.Ctx) error {
 		newPath := "/static/" + c.Params("username") + "/" + c.Params("repo") + "/" + c.Params("*")
