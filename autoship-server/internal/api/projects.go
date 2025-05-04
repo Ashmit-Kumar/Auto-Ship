@@ -24,7 +24,12 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid request")
 	}
-
+	if req.RepoURL == "" {
+		log.Println("repoURL not provided in request body")
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "repoURL is required"})
+	}
+	
+	// fmt.Println("Received repo URL:", req.RepoURL)
 	// Extract username from the GitHub repo URL
 	username, err := utils.ExtractUsernameFromRepoURL(req.RepoURL)
 	if err != nil {
@@ -48,8 +53,8 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
 
 	// If the project is static, upload to S3 and generate a hosted URL
 	if projectType == "static" {
-		key := fmt.Sprintf("%s/%s.zip", username, repoName)
-		url, err := services.UploadToS3(path, key)
+		keyPrefix := fmt.Sprintf("%s/%s", username, repoName)
+		url, err := services.UploadStaticSite(path, keyPrefix)
 		if err != nil {
 			return fiber.NewError(fiber.StatusInternalServerError, "Failed to upload to S3: "+err.Error())
 		}
