@@ -37,6 +37,7 @@ func main() {
 		log.Fatal("MONGO_URI is not set in .env file")
 	}
 
+	
 	// Set MongoDB URI
 	db.SetMongoURI(mongoURI)
 
@@ -47,6 +48,12 @@ func main() {
 	// Initialize Fiber app
 	app := fiber.New()
 	app.Use(cors.New())
+
+	// health check route
+	app.Get("/health", func(c *fiber.Ctx) error {
+		return c.SendString("OK")
+	})
+	
 	// Routes
 	app.Post("/signup", api.Signup)
 	app.Post("/login", api.Login)
