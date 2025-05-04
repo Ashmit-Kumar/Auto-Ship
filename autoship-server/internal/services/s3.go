@@ -86,6 +86,8 @@ func UploadStaticSite(localPath, keyPrefix string) (string, error) {
 
 	// Return URL to index.html
 	indexURL := fmt.Sprintf("%s/%s/index.html", s3WebsiteURL, keyPrefix)
+	// indexURL := fmt.Sprintf("%s/%s/", s3WebsiteURL, keyPrefix)
+
 	return indexURL, nil
 }
 
