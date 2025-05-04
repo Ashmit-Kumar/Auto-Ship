@@ -1,0 +1,12 @@
+# .air.toml
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o tmp/main.exe cmd/server/main.go"
+  bin = "tmp/main.exe"
+  include_dir = ["cmd", "internal"]
+
+[log]
+  level = "info"
+  format = "color"
