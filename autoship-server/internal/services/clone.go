@@ -14,10 +14,12 @@ func CloneRepository(repoURL, username, repoName string) (string, error) {
 		return path, nil // already cloned
 	}
 
+	// Create new directory for the repository
 	if err := os.MkdirAll(path, os.ModePerm); err != nil {
 		return "", fmt.Errorf("failed to create dir: %v", err)
 	}
 
+	// Execute the git clone command
 	cmd := exec.Command("git", "clone", repoURL, path)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
