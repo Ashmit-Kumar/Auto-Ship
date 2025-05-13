@@ -17,6 +17,7 @@ import (
 // RepoRequest struct defines the structure of the request for submitting a repo
 type RepoRequest struct {
 	RepoURL string `json:"repoURL"`
+	EnvContent string `json:"envContent,omitempty"` // Optional field for .env content
 }
 
 // HandleRepoSubmit handles the submission of a GitHub repository URL,
@@ -64,7 +65,7 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
 		hostedURL = url
 	} else {
 			// Run FullPipeline to detect environment, write Dockerfile, build & run
-		err := services.FullPipeline(path, "") // empty .env for now, or pass if supported
+		err := services.FullPipeline(path, req.EnvContent) // empty .env for now, or pass if supported
 		if err != nil {
 			_ = os.RemoveAll(path)
 			return fiber.NewError(fiber.StatusInternalServerError, "Failed to deploy dynamic project: "+err.Error())
