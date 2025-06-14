@@ -174,3 +174,19 @@ func DetectExposedPort(containerID string) (int, error) {
 	// Fallback to dynamic detection using netstat
 	return detectPortWithNetstat(containerID)
 }
+
+func FindFreeHostPort() (int, error) {
+    listener, err := net.Listen("tcp", ":0")
+    if err != nil {
+        return 0, err
+    }
+    defer listener.Close()
+    addr := listener.Addr().String()
+    parts := strings.Split(addr, ":")
+    portStr := parts[len(parts)-1]
+    port, err := strconv.Atoi(portStr)
+    if err != nil {
+        return 0, err
+    }
+    return port, nil
+}
