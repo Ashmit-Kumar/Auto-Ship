@@ -14,6 +14,7 @@ require (
 
 require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
+	github.com/aws/aws-sdk-go v1.55.7 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.36.3 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.10 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.29.14 // indirect
@@ -36,6 +37,7 @@ require (
 	github.com/google/go-github/v48 v48.2.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
