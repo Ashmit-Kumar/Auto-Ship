@@ -2,7 +2,7 @@ package services
 
 import (
 	"fmt"
-	"io/ioutil"
+	// "io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -22,28 +22,48 @@ const (
 
 // detectEnvironment inspects the repo to determine the runtime environment.
 func detectEnvironment(repoPath string) Environment {
-	_, err := ioutil.ReadDir(repoPath)
+	var foundNode, foundPython, foundGo bool
+
+	err := filepath.WalkDir(repoPath, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return nil // ignore errors
+		}
+
+		// Normalize file name (in case-insensitive FS)
+		switch strings.ToLower(d.Name()) {
+		case "package.json":
+			foundNode = true
+		case "requirements.txt", "app.py":
+			foundPython = true
+		case "main.go":
+			foundGo = true
+		}
+
+		// Stop early if we've found something
+		if foundNode || foundPython || foundGo {
+			return filepath.SkipDir
+		}
+
+		return nil
+	})
+
 	if err != nil {
-		fmt.Println("read dir error:", err)
+		fmt.Println("error walking repo:", err)
 		return EnvUnknown
 	}
 
-	has := func(name string) bool {
-		_, err := os.Stat(filepath.Join(repoPath, name))
-		return err == nil
-	}
-
 	switch {
-	case has("package.json"):
+	case foundNode:
 		return EnvNode
-	case has("requirements.txt") || has("app.py"):
+	case foundPython:
 		return EnvPython
-	case has("main.go"):
+	case foundGo:
 		return EnvGo
 	default:
 		return EnvUnknown
 	}
 }
+
 
 // writeDockerfile generates a Dockerfile based on the detected environment.
 func writeDockerfile(env Environment, repoPath string) error {

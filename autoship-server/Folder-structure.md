@@ -10,6 +10,7 @@
 │   │   ├── clone.go
 │   │   ├── build.go
 │   │   └── host.go
+|   |   
 │   ├── models/                # Structs for users, projects, responses
 │   ├── db/                    # DB connection and queries
 │   │   ├── postgres.go
