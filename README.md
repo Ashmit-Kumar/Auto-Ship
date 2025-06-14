@@ -62,4 +62,4 @@ This project aims to build a hosting platform similar to Vercel or Netlify. It a
 
 ---
 
-This README outlines the project's goals and tasks. Contributions and feedback are welcome!  
+This README outlines the project's goals and tasks. Contributions and feedback are welcome.  
