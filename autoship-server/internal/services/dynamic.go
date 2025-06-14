@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	// "io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -91,29 +92,69 @@ func writeDockerfile(env Environment, repoPath string) error {
 
 
 // buildAndRunContainer builds the Docker image and runs it on a specified port.
-func buildAndRunContainer(repoPath, containerName string, port int) error {
+func buildAndRunContainerHybrid(repoPath, containerName string) (int, error) {
 	imageTag := containerName + ":latest"
 
-	// Build image
+	// Step 1: Build Docker image
 	buildCmd := exec.Command("docker", "build", "-t", imageTag, ".")
 	buildCmd.Dir = repoPath
 	buildCmd.Stdout = os.Stdout
 	buildCmd.Stderr = os.Stderr
 	if err := buildCmd.Run(); err != nil {
-		return fmt.Errorf("docker build failed: %w", err)
+		return 0, fmt.Errorf("docker build failed: %w", err)
 	}
 
-	// Run container
+	// Step 2: Run container temporarily (no port binding)
+	tmpContainerName := containerName + "-tmp"
 	runCmd := exec.Command(
+		"docker", "run", "-d", "--name", tmpContainerName, imageTag,
+	)
+	runCmd.Stdout = os.Stdout
+	runCmd.Stderr = os.Stderr
+	if err := runCmd.Run(); err != nil {
+		return 0, fmt.Errorf("docker run (tmp) failed: %w", err)
+	}
+
+	// Step 3: Detect the exposed port inside container
+	port, err := utils.DetectExposedPort(tmpContainerName)
+	if err != nil {
+		// Clean up the temporary container
+		_ = exec.Command("docker", "rm", "-f", tmpContainerName).Run()
+		return 0, fmt.Errorf("failed to detect port: %w", err)
+	}
+
+	// Step 4: Reserve that port (DB + EC2)
+	if !utils.IsPortAvailable(port) {
+		_ = exec.Command("docker", "rm", "-f", tmpContainerName).Run()
+		return 0, fmt.Errorf("port %d not available on host", port)
+	}
+	if err := utils.AuthorizeEC2Port(port); err != nil {
+		_ = exec.Command("docker", "rm", "-f", tmpContainerName).Run()
+		return 0, fmt.Errorf("EC2 SG error: %w", err)
+	}
+
+	// Step 5: Commit the container state as image (optional if no changes made)
+	_ = exec.Command("docker", "commit", tmpContainerName, imageTag).Run()
+
+	// Step 6: Remove temp container
+	_ = exec.Command("docker", "rm", "-f", tmpContainerName).Run()
+
+	// Step 7: Run final container with proper port binding
+	finalRunCmd := exec.Command(
 		"docker", "run", "-d",
 		"-p", fmt.Sprintf("%d:%d", port, port),
 		"--name", containerName,
 		imageTag,
 	)
-	runCmd.Stdout = os.Stdout
-	runCmd.Stderr = os.Stderr
-	return runCmd.Run()
+	finalRunCmd.Stdout = os.Stdout
+	finalRunCmd.Stderr = os.Stderr
+	if err := finalRunCmd.Run(); err != nil {
+		return 0, fmt.Errorf("docker final run failed: %w", err)
+	}
+
+	return port, nil
 }
+
 
 // FullPipeline executes the full flow: detects env, generates Dockerfile, builds, and runs container.
 func FullPipeline(repoPath, envContent string) error {
@@ -135,20 +176,18 @@ func FullPipeline(repoPath, envContent string) error {
 		return fmt.Errorf("failed to write Dockerfile: %w", err)
 	}
 
-	// Step 4: Get a free port
-	port, err := utils.GetFreePort()
-	if err != nil {
-		return fmt.Errorf("could not get free port: %w", err)
-	}
-
-	// Step 5: Derive container name from repo path
+	// Step 4: Derive container name from repo path
 	repoName := filepath.Base(repoPath)
 	containerName := fmt.Sprintf("autoship-%s", strings.ToLower(repoName))
 
-	// Step 6: Build and run container
-	if err := buildAndRunContainer(repoPath, containerName, port); err != nil {
+
+	port, err := buildAndRunContainerHybrid(repoPath, containerName)
+	if err != nil {
 		return fmt.Errorf("container error: %w", err)
 	}
+
+	// You can log or store the port if needed
+	log.Printf("Container %s started on port %d", containerName, port)
 
 	return nil
 }
