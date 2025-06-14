@@ -123,12 +123,17 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, error) {
 		return 0, fmt.Errorf("failed to detect port: %w", err)
 	}
 
-	// Step 4: Reserve that port (DB + EC2)
+	// Step 4: Reserve a host port (DB + EC2)
+	hostPort := port
 	if !utils.IsPortAvailable(port) {
-		_ = exec.Command("docker", "rm", "-f", tmpContainerName).Run()
-		return 0, fmt.Errorf("port %d not available on host", port)
+		var err error
+		hostPort, err = utils.FindFreeHostPort()
+		if err != nil {
+			_ = exec.Command("docker", "rm", "-f", tmpContainerName).Run()
+			return 0, fmt.Errorf("failed to find free host port: %w", err)
+		}
 	}
-	if err := utils.AuthorizeEC2Port(port); err != nil {
+	if err := utils.AuthorizeEC2Port(hostPort); err != nil {
 		_ = exec.Command("docker", "rm", "-f", tmpContainerName).Run()
 		return 0, fmt.Errorf("EC2 SG error: %w", err)
 	}
@@ -142,7 +147,7 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, error) {
 	// Step 7: Run final container with proper port binding
 	finalRunCmd := exec.Command(
 		"docker", "run", "-d",
-		"-p", fmt.Sprintf("%d:%d", port, port),
+		"-p", fmt.Sprintf("%d:%d", hostPort, port),
 		"--name", containerName,
 		imageTag,
 	)
@@ -157,23 +162,23 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, error) {
 
 
 // FullPipeline executes the full flow: detects env, generates Dockerfile, builds, and runs container.
-func FullPipeline(repoPath, envContent string) error {
+func FullPipeline(repoPath, envContent string) (int, error) {
 	// Step 1: Save .env if provided
 	if envContent != "" {
 		if err := utils.SaveEnvFile(repoPath, envContent); err != nil {
-			return fmt.Errorf("failed to save .env: %w", err)
+			return 0, fmt.Errorf("failed to save .env: %w", err)
 		}
 	}
 
 	// Step 2: Detect environment
 	envType := detectEnvironment(repoPath)
 	if envType == EnvUnknown {
-		return fmt.Errorf("unsupported environment")
+		return 0, fmt.Errorf("unsupported environment")
 	}
 
 	// Step 3: Generate Dockerfile
 	if err := writeDockerfile(envType, repoPath); err != nil {
-		return fmt.Errorf("failed to write Dockerfile: %w", err)
+		return 0, fmt.Errorf("failed to write Dockerfile: %w", err)
 	}
 
 	// Step 4: Derive container name from repo path
@@ -183,11 +188,11 @@ func FullPipeline(repoPath, envContent string) error {
 
 	port, err := buildAndRunContainerHybrid(repoPath, containerName)
 	if err != nil {
-		return fmt.Errorf("container error: %w", err)
+		return 0, fmt.Errorf("container error: %w", err)
 	}
 
 	// You can log or store the port if needed
 	log.Printf("Container %s started on port %d", containerName, port)
 
-	return nil
+	return port, nil
 }

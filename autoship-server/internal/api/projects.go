@@ -64,21 +64,33 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
 		_ = os.RemoveAll(path)
 		hostedURL = url
 	} else {
-			// Run FullPipeline to detect environment, write Dockerfile, build & run
-		err := services.FullPipeline(path, req.EnvContent) // empty .env for now, or pass if supported
-		if err != nil {
-			_ = os.RemoveAll(path)
-			return fiber.NewError(fiber.StatusInternalServerError, "Failed to deploy dynamic project: "+err.Error())
-		}
+        // Run FullPipeline to detect environment, write Dockerfile, build & run
+        port, err := services.FullPipeline(path, req.EnvContent) // returns hostPort
+        if err != nil {
+            _ = os.RemoveAll(path)
+            return fiber.NewError(fiber.StatusInternalServerError, "Failed to deploy dynamic project: "+err.Error())
+        }
 
-		// Derive the dynamic port the container is using
-		port, err := utils.GetFreePort()
-		if err != nil {
-			return fiber.NewError(fiber.StatusInternalServerError, "Could not determine container port")
-		}
+        ec2Host := os.Getenv("EC2_PUBLIC_IP") // Set this in your .env or config
+        if ec2Host == "" {
+            ec2Host = "localhost"
+        }
+        hostedURL = fmt.Sprintf("http://%s:%d", ec2Host, port)
+    }
+		// err := services.FullPipeline(path, req.EnvContent) // empty .env for now, or pass if supported
+		// if err != nil {
+		// 	_ = os.RemoveAll(path)
+		// 	return fiber.NewError(fiber.StatusInternalServerError, "Failed to deploy dynamic project: "+err.Error())
+		// }
 
-		hostedURL = fmt.Sprintf("http://localhost:%d", port)
-	}
+		// // Derive the dynamic port the container is using
+		// port, err := utils.GetFreePort()
+		// if err != nil {
+		// 	return fiber.NewError(fiber.StatusInternalServerError, "Could not determine container port")
+		// }
+
+		// hostedURL = fmt.Sprintf("http://localhost:%d", port)
+	// }
 
 	// Create a new project model
 	project := &models.Project{
