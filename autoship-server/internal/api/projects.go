@@ -2,15 +2,17 @@
 package api
 
 import (
-	"os"
 	"fmt"
+	"log"
+	"os"
 	"strings"
-	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/services"
+	"time"
+
 	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/db"
 	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/models"
+	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/services"
 	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/utils"
 	"github.com/gofiber/fiber/v2"
-	"log"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -58,7 +60,8 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
 	// Detect the type of the project (static or dynamic)
 	projectType := services.DetectProjectType(path)
 	var hostedURL string
-
+	var containerPort, hostPort int
+	var containerName string
 	// If the project is static, upload to S3 and generate a hosted URL
 	if projectType == "static" {
 		keyPrefix := fmt.Sprintf("%s/%s", username, repoName)
@@ -72,7 +75,8 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
 		hostedURL = url
 	} else {
         // Run FullPipeline to detect environment, write Dockerfile, build & run
-        port, err := services.FullPipeline(path, req.EnvContent,req.StartCommand) // returns hostPort
+        containerPort, hostPort, containerName, err = services.FullPipeline(path, req.EnvContent, req.StartCommand)
+ // returns hostPort
         if err != nil {
             _ = os.RemoveAll(path)
             return fiber.NewError(fiber.StatusInternalServerError, "Failed to deploy dynamic project: "+err.Error())
@@ -82,7 +86,7 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
         if ec2Host == "" {
             ec2Host = "localhost"
         }
-        hostedURL = fmt.Sprintf("http://%s:%d", ec2Host, port)
+        hostedURL = fmt.Sprintf("http://%s:%d", ec2Host, hostPort)
     }
 		
 	// encrypt the hosted URL for security
@@ -96,6 +100,12 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
 		// add columns for createdAt, updatedAt, etc.
 		// ports will be added in future
 		// start command: "",
+		StartCommand:  req.StartCommand,
+		ContainerPort: containerPort,
+		HostPort:      hostPort,
+		ContainerName: containerName,
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
 	}
 
 	// Save the project details to the database
