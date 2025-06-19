@@ -18,6 +18,8 @@ import (
 type RepoRequest struct {
 	RepoURL string `json:"repoURL"`
 	EnvContent string `json:"envContent,omitempty"` // Optional field for .env content
+	// IN future, add fields for branch, commit 
+
 }
 
 // HandleRepoSubmit handles the submission of a GitHub repository URL,
@@ -33,6 +35,8 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
 	}
 	
 	// fmt.Println("Received repo URL:", req.RepoURL)
+
+
 	// Extract username from the GitHub repo URL
 	username, err := utils.ExtractUsernameFromRepoURL(req.RepoURL)
 	if err != nil {
@@ -62,6 +66,8 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
 			return fiber.NewError(fiber.StatusInternalServerError, "Failed to upload to S3: "+err.Error())
 		}
 		_ = os.RemoveAll(path)
+
+		//when returning the s3 url shorten it and encrypt it and in future all links we be routed through a proxy server
 		hostedURL = url
 	} else {
         // Run FullPipeline to detect environment, write Dockerfile, build & run
@@ -77,21 +83,8 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
         }
         hostedURL = fmt.Sprintf("http://%s:%d", ec2Host, port)
     }
-		// err := services.FullPipeline(path, req.EnvContent) // empty .env for now, or pass if supported
-		// if err != nil {
-		// 	_ = os.RemoveAll(path)
-		// 	return fiber.NewError(fiber.StatusInternalServerError, "Failed to deploy dynamic project: "+err.Error())
-		// }
-
-		// // Derive the dynamic port the container is using
-		// port, err := utils.GetFreePort()
-		// if err != nil {
-		// 	return fiber.NewError(fiber.StatusInternalServerError, "Could not determine container port")
-		// }
-
-		// hostedURL = fmt.Sprintf("http://localhost:%d", port)
-	// }
-
+		
+	// encrypt the hosted URL for security
 	// Create a new project model
 	project := &models.Project{
 		Username:    username,
@@ -99,6 +92,9 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
 		RepoName:    repoName,
 		ProjectType: projectType,
 		HostedURL:   hostedURL,
+		// add columns for createdAt, updatedAt, etc.
+		// ports will be added in future
+		// start command: "",
 	}
 
 	// Save the project details to the database
@@ -113,6 +109,9 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
 		"url":         hostedURL,
 	})
 }
+
+
+
 // GetUserProjects fetches all projects belonging to the authenticated user
 func GetUserProjects(c *fiber.Ctx) error {
 	claims := c.Locals("user").(map[string]interface{})
