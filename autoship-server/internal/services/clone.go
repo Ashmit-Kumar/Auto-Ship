@@ -7,6 +7,9 @@ import (
 	"os/exec"
 )
 
+// In future add support for cloning specific branches or commits
+
+// This only clones main branch of the repo
 func CloneRepository(repoURL, username, repoName string) (string, error) {
 	path := fmt.Sprintf("static/%s/%s", username, repoName)
 
