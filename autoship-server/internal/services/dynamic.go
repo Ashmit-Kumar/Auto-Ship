@@ -67,6 +67,7 @@ func detectEnvironment(repoPath string) Environment {
 
 
 // writeDockerfile generates a Dockerfile based on the detected environment.
+// I will work on This Today
 func writeDockerfile(env Environment, repoPath string) error {
 	templateDir := filepath.Join("internal", "services", "docker_templates")
 
