@@ -18,6 +18,7 @@ import (
 type RepoRequest struct {
 	RepoURL string `json:"repoURL"`
 	EnvContent string `json:"envContent,omitempty"` // Optional field for .env content
+	StartCommand string `json:"startCommand"`
 	// IN future, add fields for branch, commit 
 
 }
@@ -71,7 +72,7 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
 		hostedURL = url
 	} else {
         // Run FullPipeline to detect environment, write Dockerfile, build & run
-        port, err := services.FullPipeline(path, req.EnvContent) // returns hostPort
+        port, err := services.FullPipeline(path, req.EnvContent,req.StartCommand) // returns hostPort
         if err != nil {
             _ = os.RemoveAll(path)
             return fiber.NewError(fiber.StatusInternalServerError, "Failed to deploy dynamic project: "+err.Error())
