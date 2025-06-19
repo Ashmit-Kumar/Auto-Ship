@@ -67,28 +67,48 @@ func detectEnvironment(repoPath string) Environment {
 
 
 // writeDockerfile generates a Dockerfile based on the detected environment.
-// I will work on This Today
-func writeDockerfile(env Environment, repoPath string) error {
-	templateDir := filepath.Join("internal", "services", "docker_templates")
+// GenerateDockerfile creates a Dockerfile dynamically using detected environment and user-provided startCommand.
+func GenerateDockerfile(env Environment, repoPath, startCommand string) error {
+	var baseImage string
+	var installCmd string
 
-	var templateFile string
 	switch env {
 	case EnvNode:
-		templateFile = filepath.Join(templateDir, "node.Dockerfile")
+		baseImage = "node:18"
+		installCmd = "RUN npm install"
 	case EnvPython:
-		templateFile = filepath.Join(templateDir, "python.Dockerfile")
+		baseImage = "python:3.10"
+		installCmd = "RUN pip install -r requirements.txt"
 	case EnvGo:
-		templateFile = filepath.Join(templateDir, "go.Dockerfile")
+		baseImage = "golang:1.20"
+		installCmd = "RUN go build -o app ."
 	default:
-		return fmt.Errorf("unknown environment")
+		return fmt.Errorf("unsupported environment: %s", env)
 	}
 
-	content, err := os.ReadFile(templateFile)
-	if err != nil {
-		return fmt.Errorf("failed to read Dockerfile template: %w", err)
+	// Sanitize and convert the startCommand to CMD array format for Dockerfile
+	cmdParts := strings.Fields(startCommand)
+	if len(cmdParts) == 0 {
+		return fmt.Errorf("start command is empty")
 	}
 
-	return os.WriteFile(filepath.Join(repoPath, "Dockerfile"), content, 0644)
+	var quotedParts []string
+	for _, part := range cmdParts {
+		quotedParts = append(quotedParts, fmt.Sprintf("\"%s\"", part))
+	}
+	cmdLine := fmt.Sprintf("CMD [%s]", strings.Join(quotedParts, ", "))
+
+	// Assemble the Dockerfile content
+	dockerfile := fmt.Sprintf(`FROM %s
+	WORKDIR /app
+	COPY . .
+	%s
+	%s
+	`, baseImage, installCmd, cmdLine)
+
+	// Write to Dockerfile
+	dockerfilePath := filepath.Join(repoPath, "Dockerfile")
+	return os.WriteFile(dockerfilePath, []byte(dockerfile), 0644)
 }
 
 
@@ -163,7 +183,7 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, error) {
 
 
 // FullPipeline executes the full flow: detects env, generates Dockerfile, builds, and runs container.
-func FullPipeline(repoPath, envContent string) (int, error) {
+func FullPipeline(repoPath, envContent, startCommand string) (int, error) {
 	// Step 1: Save .env if provided
 	if envContent != "" {
 		if err := utils.SaveEnvFile(repoPath, envContent); err != nil {
@@ -177,23 +197,22 @@ func FullPipeline(repoPath, envContent string) (int, error) {
 		return 0, fmt.Errorf("unsupported environment")
 	}
 
-	// Step 3: Generate Dockerfile
-	if err := writeDockerfile(envType, repoPath); err != nil {
-		return 0, fmt.Errorf("failed to write Dockerfile: %w", err)
+	// Step 3: Generate Dockerfile dynamically using startCommand
+	if err := GenerateDockerfile(envType, repoPath, startCommand); err != nil {
+		return 0, fmt.Errorf("failed to generate Dockerfile: %w", err)
 	}
 
 	// Step 4: Derive container name from repo path
 	repoName := filepath.Base(repoPath)
 	containerName := fmt.Sprintf("autoship-%s", strings.ToLower(repoName))
 
-
+	// Step 5: Build and run container
 	port, err := buildAndRunContainerHybrid(repoPath, containerName)
 	if err != nil {
 		return 0, fmt.Errorf("container error: %w", err)
 	}
 
-	// You can log or store the port if needed
 	log.Printf("Container %s started on port %d", containerName, port)
-
 	return port, nil
 }
+
