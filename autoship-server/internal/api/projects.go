@@ -75,7 +75,7 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
 		hostedURL = url
 	} else {
         // Run FullPipeline to detect environment, write Dockerfile, build & run
-        containerPort, hostPort, containerName, err = services.FullPipeline(path, req.EnvContent, req.StartCommand)
+        containerPort, hostPort, containerName, err = services.FullPipeline(username, path, req.EnvContent, req.StartCommand)
  // returns hostPort
         if err != nil {
             _ = os.RemoveAll(path)

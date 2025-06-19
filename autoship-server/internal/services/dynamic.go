@@ -178,7 +178,7 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, error
 
 
 // FullPipeline executes the full flow: detects env, generates Dockerfile, builds, and runs container.
-func FullPipeline(repoPath, envContent, startCommand string) (int, int, string, error) {
+func FullPipeline(username,repoPath, envContent, startCommand string) (int, int, string, error) {
 	// Step 1: Save .env if provided
 	if envContent != "" {
 		if err := utils.SaveEnvFile(repoPath, envContent); err != nil {
@@ -199,7 +199,7 @@ func FullPipeline(repoPath, envContent, startCommand string) (int, int, string, 
 
 	// Step 4: Derive container name from repo
 	repoName := filepath.Base(repoPath)
-	containerName := fmt.Sprintf("autoship-%s", strings.ToLower(repoName))
+	containerName := fmt.Sprintf("autoship-%s-%s", username, strings.ToLower(repoName))
 
 	// Step 5: Build and run container
 	containerPort, hostPort, err := buildAndRunContainerHybrid(repoPath, containerName)
