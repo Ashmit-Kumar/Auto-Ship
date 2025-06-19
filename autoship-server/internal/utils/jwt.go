@@ -44,6 +44,7 @@ func GenerateJWT(userID, email string) (string, error) {
 	claims := &Claims{
 		UserID: userID,
 		Email:  email,
+		
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},
