@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 	"time"
-
 	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/db"
 	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/models"
 	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/services"
@@ -125,8 +124,9 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
 
 // GetUserProjects fetches all projects belonging to the authenticated user
 func GetUserProjects(c *fiber.Ctx) error {
-	claims := c.Locals("user").(map[string]interface{})
-	username := claims["username"].(string)
+	// import your utils package if not already imported
+	claims := c.Locals("user").(*utils.Claims)
+	username := claims.Email // or claims.UserID, depending on what you want
 
 	collection := db.GetCollection("projects")
 	cursor, err := collection.Find(c.Context(), bson.M{"username": username})
