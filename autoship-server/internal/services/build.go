@@ -20,6 +20,7 @@ func DetectProjectType(projectPath string) string {
 
 	for _, dir := range commonDirs {
 		fullPath := filepath.Join(projectPath, dir)
+		fmt.Println("Checking directory:", fullPath)
 		// New dynamic detection logic:
 		// 1. If package.json exists and contains a 'start' script, treat as dynamic
 		pkgPath := filepath.Join(fullPath, "package.json")
