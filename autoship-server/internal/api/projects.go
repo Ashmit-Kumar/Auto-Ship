@@ -58,6 +58,7 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
 
 	// Detect the type of the project (static or dynamic)
 	projectType := services.DetectProjectType(path)
+	fmt.Println("Project type detected:", projectType)
 	var hostedURL string
 	var containerPort, hostPort int
 	var containerName string

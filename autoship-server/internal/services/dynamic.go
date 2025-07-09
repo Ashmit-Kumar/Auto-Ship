@@ -30,6 +30,7 @@ func detectEnvironment(repoPath string) Environment {
 			return nil // ignore errors
 		}
 
+		fmt.Printf("Visited: %s\n", path)
 		// Normalize file name (in case-insensitive FS)
 		switch strings.ToLower(d.Name()) {
 		case "package.json":
