@@ -54,12 +54,17 @@ func detectEnvironment(repoPath string) Environment {
 		return EnvUnknown
 	}
 
+	
+
 	switch {
 	case foundNode:
+		fmt.Println("Detected Node.js environment")
 		return EnvNode
 	case foundPython:
+		fmt.Println("Detected Python environment")
 		return EnvPython
 	case foundGo:
+		fmt.Println("Detected Go environment")
 		return EnvGo
 	default:
 		return EnvUnknown
@@ -72,7 +77,7 @@ func detectEnvironment(repoPath string) Environment {
 func GenerateDockerfile(env Environment, repoPath, startCommand string) error {
 	var baseImage string
 	var installCmd string
-
+	fmt.Println("repopath:", repoPath)
 	switch env {
 	case EnvNode:
 		baseImage = "node:18"
@@ -115,6 +120,16 @@ func GenerateDockerfile(env Environment, repoPath, startCommand string) error {
 
 // buildAndRunContainer builds the Docker image and runs it on a specified port.
 func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, error) {
+	// Derive image tag from container name
+	if containerName == "" {
+		return 0, 0, fmt.Errorf("container name cannot be empty")
+	}
+	if repoPath == "" {
+		return 0, 0, fmt.Errorf("repository path cannot be empty")
+	}
+	containerName = strings.TrimSpace(containerName)
+	containerName = strings.ToLower(containerName) // Ensure consistent casing
+	// Derive image tag from container name
 	imageTag := containerName + ":latest"
 
 	// Step 1: Build image
