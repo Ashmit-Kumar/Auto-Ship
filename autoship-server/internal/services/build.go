@@ -2,10 +2,11 @@
 package services
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
+	// "strings"
 )
 
 func DetectProjectType(projectPath string) string {
@@ -21,22 +22,32 @@ func DetectProjectType(projectPath string) string {
 	for _, dir := range commonDirs {
 		fullPath := filepath.Join(projectPath, dir)
 		fmt.Println("Checking directory:", fullPath)
-		// New dynamic detection logic:
-		// 1. If package.json exists and contains a 'start' script, treat as dynamic
+
+		// 1. Dynamic: package.json with "start" script
 		pkgPath := filepath.Join(fullPath, "package.json")
 		if fi, err := os.Stat(pkgPath); err == nil && !fi.IsDir() {
 			data, err := os.ReadFile(pkgPath)
-			if err == nil && strings.Contains(string(data), "\"start\"") {
-				return "dynamic"
-			}
-			// Also treat as dynamic if server.js, app.js, or main.go exists in the same dir
-			for _, entry := range []string{"server.js", "app.js", "main.go"} {
-				if _, err := os.Stat(filepath.Join(fullPath, entry)); err == nil {
-					return "dynamic"
+			if err == nil {
+				var pkg struct {
+					Scripts map[string]string `json:"scripts"`
+				}
+				if err := json.Unmarshal(data, &pkg); err == nil {
+					if _, ok := pkg.Scripts["start"]; ok {
+						return "dynamic"
+					}
 				}
 			}
 		}
-		if _, err := os.Stat(filepath.Join(fullPath, "index.html")); err == nil {
+
+		// 2. Dynamic: backend entrypoints
+		for _, entry := range []string{"server.js", "app.js", "main.go"} {
+			if fi, err := os.Stat(filepath.Join(fullPath, entry)); err == nil && !fi.IsDir() {
+				return "dynamic"
+			}
+		}
+
+		// 3. Static: index.html (untouched)
+		if fi, err := os.Stat(filepath.Join(fullPath, "index.html")); err == nil && !fi.IsDir() {
 			return "static"
 		}
 	}
