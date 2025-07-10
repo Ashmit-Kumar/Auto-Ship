@@ -30,6 +30,6 @@ func CloneRepository(repoURL, username, repoName string) (string, error) {
 	if err := cmd.Run(); err != nil {
 		return "", fmt.Errorf("git clone failed: %v", err)
 	}
-
+	fmt.Println("Repository cloned successfully to:", path)
 	return path, nil
 }
