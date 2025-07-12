@@ -9,3 +9,5 @@ test/
 *.md
 *.git
 
+# build 
+server
