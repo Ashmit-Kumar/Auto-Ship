@@ -143,4 +143,3 @@ func GetUserProjects(c *fiber.Ctx) error {
 
 	return c.JSON(projects)
 }
-//
