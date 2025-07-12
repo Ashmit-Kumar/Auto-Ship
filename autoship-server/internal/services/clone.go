@@ -24,8 +24,6 @@ func CloneRepository(repoURL, username, repoName string) (string, error) {
 
 	// Execute the git clone command
 	cmd := exec.Command("git", "clone", repoURL, path)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
 
 	fmt.Println("Cloning repository:", repoURL)
 	// Run the command and check for errors

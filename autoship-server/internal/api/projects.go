@@ -58,7 +58,7 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
 
 	// Detect the type of the project (static or dynamic)
 	projectType := services.DetectProjectType(path)
-	if(projectPath := path; projectType == "unknown") {
+	if projectType == "unknown" {
 		// _ = os.RemoveAll(path)
 		return fiber.NewError(fiber.StatusBadRequest, "Unknown project type. Please ensure the repository contains a valid project structure.")
 	}
