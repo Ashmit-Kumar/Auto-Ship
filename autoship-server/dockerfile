@@ -1,25 +1,73 @@
-# -------- Stage 1: Build --------
-FROM golang:1.24-alpine AS builder
+# -------- Stage 1: Builder --------
+FROM golang:1.24 AS builder
 
 WORKDIR /app
+
+# Install required tools for go mod
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates && rm -rf /var/lib/apt/lists/*
 
 COPY go.mod go.sum ./
 RUN go mod tidy
 
 COPY . .
-
-RUN go build -o server cmd/server/main.go
+RUN go build -o server ./cmd/server/main.go
 
 # -------- Stage 2: Runtime --------
-FROM alpine:3.22
+FROM ubuntu:22.04
 
+# Set workdir
 WORKDIR /app
 
-# ✅ Install CA certificates
-RUN apk --no-cache add ca-certificates
+# Use a reliable mirror (optional, based on your region)
+RUN sed -i 's|http://archive.ubuntu.com/ubuntu/|http://mirrors.ustc.edu.cn/ubuntu/|g' /etc/apt/sources.list
 
+# Install Docker CLI and required tools
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    docker.io \
+    curl \
+    git \
+    ca-certificates \
+    net-tools && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy the compiled server binary
 COPY --from=builder /app/server .
 
-EXPOSE 5000
+# Allow mounting Docker socket
+VOLUME ["/var/run/docker.sock"]
 
+EXPOSE 5000
 CMD ["./server"]
+
+
+# # -------- Stage 1: Build --------
+# FROM golang:1.24 AS builder
+
+# WORKDIR /app
+
+# # Install git & CA certificates for the build stage
+# RUN apt-get update \
+#  && apt-get install -y --no-install-recommends git ca-certificates \
+#  && rm -rf /var/lib/apt/lists/*
+
+# COPY go.mod go.sum ./
+# RUN go mod tidy
+
+# COPY . .
+# RUN go build -o server ./cmd/server/main.go
+
+# # -------- Stage 2: Runtime --------
+# FROM ubuntu:24.04
+
+# WORKDIR /app
+
+# # Install git & CA certificates in the runtime image
+# RUN apt-get update \
+#  && apt-get install -y --no-install-recommends git ca-certificates \
+#  && rm -rf /var/lib/apt/lists/*
+
+# COPY --from=builder /app/server .
+
+# EXPOSE 5000
+# CMD ["./server"]
