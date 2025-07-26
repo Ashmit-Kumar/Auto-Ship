@@ -44,6 +44,9 @@ func CloneRepository(repoURL, username, repoName string) (string, error) {
 
 	output, err := cmd.CombinedOutput()
 	fmt.Println("Git Output:\n", string(output))
+	fmt.Println("Git clone command finished.")
+    fmt.Println("Git Output:\n", string(output))
+
 
 	if err != nil {
 	return "", fmt.Errorf("git clone failed: %v\n%s", err, output)
