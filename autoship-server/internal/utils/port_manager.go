@@ -38,14 +38,6 @@ func init() {
     Region          = os.Getenv("AWS_REGION")
 }
 
-// const (
-// 	MongoURI        = "your_mongo_uri"
-// 	DatabaseName    = "autoship"
-// 	CollectionName  = "ports"
-// 	SecurityGroupID = "sg-xxxxxxxx" // Replace with your EC2 SG ID
-// 	Region          = "ap-south-1"  // Adjust region
-// )
-
 // GetOrReserveValidFreePort finds an unused port and opens it in the EC2 security group
 func GetOrReserveValidFreePort(containerName string) (int, error) {
 	ctx := context.Background()
