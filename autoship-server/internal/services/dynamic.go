@@ -77,6 +77,7 @@ func detectEnvironment(repoPath string) Environment {
 func GenerateDockerfile(env Environment, repoPath, startCommand string) error {
 	var baseImage string
 	var installCmd string
+	var netToolsInstall string
 	fmt.Println("repopath:", repoPath)
 	switch env {
 	case EnvNode:
