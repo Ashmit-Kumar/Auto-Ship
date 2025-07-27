@@ -55,13 +55,3 @@ This project aims to build a hosting platform similar to Vercel or Netlify. It a
 ---
 
 This README outlines the project's goals and tasks. Contributions and feedback are welcome.  
-
-<!-- Docker run command -->
-```shell
-sudo docker run 
-    -v $(pwd)/.env:/app/.env
-    -v /var/run/docker.sock:/var/run/docker.sock
-    -v /usr/bin/docker:/usr/bin/docker
-    -p 5000:5000
-    -d <IMAGE_NAME>
- ```
