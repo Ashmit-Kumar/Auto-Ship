@@ -81,12 +81,15 @@ func GenerateDockerfile(env Environment, repoPath, startCommand string) error {
 	switch env {
 	case EnvNode:
 		baseImage = "node:18"
+		netToolsInstall = "RUN apt update && apt install -y net-tools"
 		installCmd = "RUN npm install"
 	case EnvPython:
 		baseImage = "python:3.10"
+		netToolsInstall = "RUN apt update && apt install -y net-tools"
 		installCmd = "RUN pip install -r requirements.txt"
 	case EnvGo:
 		baseImage = "golang:1.20"
+		netToolsInstall = "RUN apt update && apt install -y net-tools"
 		installCmd = "RUN go build -o app ."
 	default:
 		return fmt.Errorf("unsupported environment: %s", env)
@@ -110,7 +113,7 @@ func GenerateDockerfile(env Environment, repoPath, startCommand string) error {
 	COPY . .
 	%s
 	%s
-	`, baseImage, installCmd, cmdLine)
+	`, baseImage, netToolsInstall, installCmd, cmdLine)
 
 	// Write to Dockerfile
 	dockerfilePath := filepath.Join(repoPath, "Dockerfile")
@@ -148,10 +151,15 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, error
 	// Create a temporary container to detect exposed port
 	// Use the same image tag but with a different name
 	// This avoids conflicts with the final container
-	if err := exec.Command("docker", "rm", "-f", tmpContainer).Run(); err != nil {
-		// Ignore error if container doesn't exist
-		log.Printf("Warning: Failed to remove existing temporary container %s: %v", tmpContainer, err)
-	}
+	
+	
+	// if err := exec.Command("docker", "rm", "-f", tmpContainer).Run(); err != nil {
+	// 	// Ignore error if container doesn't exist
+	// 	log.Printf("Warning: Failed to remove existing temporary container %s: %v", tmpContainer, err)
+	// }
+	
+	
+	
 	// Run the temporary container in detached mode
 	// Use the image tag built earlier
 	fmt.Println("Running temporary container for port detection... ", tmpContainer)
@@ -164,7 +172,7 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, error
 	// This allows us to inspect the container later
 	// Note: This is a temporary container, it will be removed after port detection
 	// Use the image tag built earlier
-	runCmd := exec.Command("docker", "run", "-d", "--entrypoint", "tail", "--name", tmpContainer, imageTag, "-f", "/dev/null")
+	runCmd := exec.Command("docker", "run", "-d", "--name", tmpContainer, imageTag)
 	runCmd.Stdout = os.Stdout
 	runCmd.Stderr = os.Stderr
 	if err := runCmd.Run(); err != nil {
