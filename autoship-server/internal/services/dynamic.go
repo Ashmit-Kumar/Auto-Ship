@@ -142,6 +142,7 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, error
 	}
 
 	// Step 2: Run temp container
+	fmt.Println("Building a temporary Container 88 88888888 888888888888 88888888888 888888888888   888888888888 888888888888 8888888     888888")
 	tmpContainer := containerName + "-tmp"
 	runCmd := exec.Command("docker", "run", "-d", "--name", tmpContainer, imageTag)
 	runCmd.Stdout = os.Stdout
@@ -151,6 +152,7 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, error
 	}
 
 	// Step 3: Detect container's exposed port
+	fmt.Println("Detecting Exposed Port PPPPPPPPPPPPPPPPPPPPPPPPPPOOOOOOOOOOOOOOOOOOOOOOOOORRRRRRRRRRRRRRRRRRRRRRTTTTTTTTTTTTTTTTTTTTTTTTTTTT")
 	containerPort, err := utils.DetectExposedPort(tmpContainer)
 	if err != nil {
 		_ = exec.Command("docker", "rm", "-f", tmpContainer).Run()
@@ -175,6 +177,7 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, error
 	_ = exec.Command("docker", "commit", tmpContainer, imageTag).Run()
 	_ = exec.Command("docker", "rm", "-f", tmpContainer).Run()
 
+	fmt.Println("Making                                       final                         Container")
 	// Step 5: Run final container
 	finalCmd := exec.Command(
 		"docker", "run", "-d",
