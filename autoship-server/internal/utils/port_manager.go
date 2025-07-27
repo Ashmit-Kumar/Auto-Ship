@@ -136,7 +136,12 @@ func tryDefaultPorts(containerID string) (int, error) {
 
 // detectPortWithNetstat uses netstat inside the container to find open ports.
 func detectPortWithNetstat(containerID string) (int, error) {
+	fmt.Println("Running netstat inside the container to detect open ports... ", containerID)
+	// Execute netstat command inside the container
 	cmd := exec.Command("docker", "exec", containerID, "netstat", "-tuln")
+	if err := cmd.Run(); err != nil {
+		return 0, fmt.Errorf("failed to exec netstat: %w", err)
+	}
 	output, err := cmd.Output()
 	if err != nil {
 		return 0, fmt.Errorf("failed to exec netstat: %w", err)
@@ -160,9 +165,12 @@ func detectPortWithNetstat(containerID string) (int, error) {
 
 func DetectExposedPort(containerID string) (int, error) {
 	// Try default common ports first
+	fmt.Println("Detecting Exposed Port using default ports... ", containerID)
 	if port, err := tryDefaultPorts(containerID); err == nil {
 		return port, nil
 	}
+	fmt.Println("No default port matched, trying dynamic detection...")
+	fmt.Println("Detecting port using netstat inside the container... ", containerID)
 	// Fallback to dynamic detection using netstat
 	return detectPortWithNetstat(containerID)
 }
