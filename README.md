@@ -1,8 +1,6 @@
 # 🚀 Auto-Ship
 This project aims to build a hosting platform similar to Vercel or Netlify. It allows users to deploy their GitHub repositories and host them with a unique live link.
 
----
-
 ## 🧠 **Basic Workflow**
 
 ### 1. User Input
@@ -24,8 +22,6 @@ This project aims to build a hosting platform similar to Vercel or Netlify. It a
 ### 5. Show Live Link
 - Users receive a live link to their hosted project, which they can copy or share.
 
----
-
 ## 🔧 **Tech Stack**
 
 ### Frontend
@@ -43,16 +39,12 @@ This project aims to build a hosting platform similar to Vercel or Netlify. It a
 - **Reverse Proxy**: NGINX
 - **Database**: PostgreSQL for URL management.
 
----
-
 ## 🛡️ **Security and Maintenance**
 
 - **Input Sanitization**: Prevent injection attacks.
 - **Rate Limiting**: Avoid abuse and monitor GitHub API usage.
 - **Cleanup**: Automatically remove old repositories and builds.
 - **Build Logs**: Provide real-time logs for transparency and debugging.
-
----
 
 ## 🧪 **MVP Goals**
 
@@ -63,3 +55,13 @@ This project aims to build a hosting platform similar to Vercel or Netlify. It a
 ---
 
 This README outlines the project's goals and tasks. Contributions and feedback are welcome.  
+
+<!-- Docker run command -->
+```shell
+sudo docker run 
+    -v $(pwd)/.env:/app/.env
+    -v /var/run/docker.sock:/var/run/docker.sock
+    -v /usr/bin/docker:/usr/bin/docker
+    -p 5000:5000
+    -d <IMAGE_NAME>
+ ```

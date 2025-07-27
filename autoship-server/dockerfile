@@ -39,35 +39,3 @@ VOLUME ["/var/run/docker.sock"]
 
 EXPOSE 5000
 CMD ["./server"]
-
-
-# # -------- Stage 1: Build --------
-# FROM golang:1.24 AS builder
-
-# WORKDIR /app
-
-# # Install git & CA certificates for the build stage
-# RUN apt-get update \
-#  && apt-get install -y --no-install-recommends git ca-certificates \
-#  && rm -rf /var/lib/apt/lists/*
-
-# COPY go.mod go.sum ./
-# RUN go mod tidy
-
-# COPY . .
-# RUN go build -o server ./cmd/server/main.go
-
-# # -------- Stage 2: Runtime --------
-# FROM ubuntu:24.04
-
-# WORKDIR /app
-
-# # Install git & CA certificates in the runtime image
-# RUN apt-get update \
-#  && apt-get install -y --no-install-recommends git ca-certificates \
-#  && rm -rf /var/lib/apt/lists/*
-
-# COPY --from=builder /app/server .
-
-# EXPOSE 5000
-# CMD ["./server"]
