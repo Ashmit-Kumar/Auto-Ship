@@ -144,6 +144,26 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, error
 	// Step 2: Run temp container
 	fmt.Println("Building a temporary Container 88 88888888 888888888888 88888888888 888888888888   888888888888 888888888888 8888888     888888")
 	tmpContainer := containerName + "-tmp"
+	fmt.Println("Running temporary container for port detection... ", tmpContainer)
+	// Create a temporary container to detect exposed port
+	// Use the same image tag but with a different name
+	// This avoids conflicts with the final container
+	if err := exec.Command("docker", "rm", "-f", tmpContainer).Run(); err != nil {
+		// Ignore error if container doesn't exist
+		log.Printf("Warning: Failed to remove existing temporary container %s: %v", tmpContainer, err)
+	}
+	// Run the temporary container in detached mode
+	// Use the image tag built earlier
+	fmt.Println("Running temporary container for port detection... ", tmpContainer)
+	// Use the image tag built earlier
+	// Use a simple command that keeps the container running
+	// This is just to keep the container alive for port detection
+	// You can use any command that suits your needs, like "tail -f /dev/null"
+	// or a simple sleep command
+	// Here we use "bash" to keep it running
+	// This allows us to inspect the container later
+	// Note: This is a temporary container, it will be removed after port detection
+	// Use the image tag built earlier
 	runCmd := exec.Command("docker", "run", "-d", "--name", tmpContainer, imageTag)
 	runCmd.Stdout = os.Stdout
 	runCmd.Stderr = os.Stderr
