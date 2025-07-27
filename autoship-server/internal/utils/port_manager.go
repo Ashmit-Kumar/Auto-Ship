@@ -142,7 +142,9 @@ func detectPortWithNetstat(containerID string) (int, error) {
 	if err := cmd.Run(); err != nil {
 		return 0, fmt.Errorf("failed to exec netstat: %w", err)
 	}
-	output, err := cmd.Output()
+	// output, err := cmd.Output()
+	output, err := cmd.CombinedOutput() // <-- not just Output()
+	fmt.Println("Netstat Output:\n", string(output)) // <-- helpful to print it
 	if err != nil {
 		return 0, fmt.Errorf("failed to exec netstat: %w", err)
 	}

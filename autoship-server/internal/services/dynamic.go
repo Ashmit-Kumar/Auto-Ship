@@ -164,7 +164,7 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, error
 	// This allows us to inspect the container later
 	// Note: This is a temporary container, it will be removed after port detection
 	// Use the image tag built earlier
-	runCmd := exec.Command("docker", "run", "-d", "--name", tmpContainer, imageTag)
+	runCmd := exec.Command("docker", "run", "-d", "--entrypoint", "tail", "--name", tmpContainer, imageTag, "-f", "/dev/null")
 	runCmd.Stdout = os.Stdout
 	runCmd.Stderr = os.Stderr
 	if err := runCmd.Run(); err != nil {
