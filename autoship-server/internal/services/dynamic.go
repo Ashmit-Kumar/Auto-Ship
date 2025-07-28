@@ -181,7 +181,15 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, error
 		return 0, 0, fmt.Errorf("docker run (tmp) failed: %w", err)
 	}
 
-	// Step 3: Detect container's exposed port
+	// Step 3: Wait for the container to be fully up
+	fmt.Println("Waiting for the temporary container to be fully up... ", tmpContainer)
+	// Sleep for few seconds to ensure the container is fully up
+	// This is important to ensure the container is ready to accept connections
+	// You can adjust the sleep duration based on your needs
+	// Here we use 5 seconds, but you can increase it if needed
+	time.Sleep(5 * time.Second) // <-- wait for the container to be fully up
+
+	// Step 4: Detect exposed port
 	fmt.Println("Detecting Exposed Port PPPPPPPPPPPPPPPPPPPPPPPPPPOOOOOOOOOOOOOOOOOOOOOOOOORRRRRRRRRRRRRRRRRRRRRRTTTTTTTTTTTTTTTTTTTTTTTTTTTT")
 	containerPort, err := utils.DetectExposedPort(tmpContainer)
 	if err != nil {
@@ -193,7 +201,7 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, error
 		return 0, 0, fmt.Errorf("port detection failed: %w", err)
 	}
 
-	// Step 4: Pick host port
+	// Step 5: Pick host port
 	fmt.Println("Detected container port in isPortAvailable function:", containerPort)
 	hostPort := containerPort
 	if !utils.IsPortAvailable(hostPort) {
@@ -219,7 +227,7 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, error
 	// _ = exec.Command("docker", "rm", "-f", tmpContainer).Run()
 
 	fmt.Println("Making                                       final                         Container")
-	// Step 5: Run final container
+	// Step 6: Run final container
 	finalCmd := exec.Command(
 		"docker", "run", "-d",
 		"-p", fmt.Sprintf("%d:%d", hostPort, containerPort),
