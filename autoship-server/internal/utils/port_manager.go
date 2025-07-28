@@ -101,17 +101,25 @@ func GetOrReserveValidFreePort(containerName string) (int, error) {
 	}
 	opts := options.FindOne().SetSort(bson.D{{"port", -1}})
 	err = coll.FindOne(ctx, bson.M{}, opts).Decode(&portDoc)
-	startPort := 2000 // default fallback
-	if err == nil {
-		startPort = portDoc.Port
+	fmt.Println("Latest port found in DB:", portDoc.Port)
+	if err == mongo.ErrNoDocuments {
+		// No ports found, start from default
+		fmt.Println("No ports found in DB, starting from default port 2000")
+		portDoc.Port = 1999 // default fallback
+	} else if err != nil {
+		return 0, fmt.Errorf("failed to find latest port: %w", err)
 	}
+	startPort := portDoc.Port+1 // default fallback
+	// if err == nil {
+	// 	startPort = portDoc.Port+1 // start from the next port
+	// }
 
 	// Step 2: Try finding a free port by incrementing
 	for port := startPort; port <= 65535; port++ {
 		if IsPortAvailable(port) {
 			// Try reserving in DB (ensure atomicity in multi-user environments)
-			_, err := coll.UpdateOne(ctx,
-				bson.M{"port": port},
+				_, err := coll.UpdateOne(ctx,
+				bson.M{"port": port, "status": bson.M{"$ne": "used"}}, // <--- important
 				bson.M{
 					"$setOnInsert": bson.M{
 						"port":          port,
