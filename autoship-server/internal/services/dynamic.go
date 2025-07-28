@@ -156,10 +156,10 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, error
 	// This avoids conflicts with the final container
 	
 	
-	if err := exec.Command("docker", "rm", "-f", tmpContainer).Run(); err != nil {
-		// Ignore error if container doesn't exist
-		log.Printf("Warning: Failed to remove existing temporary container %s: %v", tmpContainer, err)
-	}
+	// if err := exec.Command("docker", "rm", "-f", tmpContainer).Run(); err != nil {
+	// 	// Ignore error if container doesn't exist
+	// 	log.Printf("Warning: Failed to remove existing temporary container %s: %v", tmpContainer, err)
+	// }
 	
 	
 	
