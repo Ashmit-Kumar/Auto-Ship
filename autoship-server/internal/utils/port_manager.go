@@ -137,12 +137,17 @@ func tryDefaultPorts(containerID string) (int, error) {
 // detectPortWithNetstat uses netstat inside the container to find open ports.
 func detectPortWithNetstat(containerID string) (int, error) {
 	fmt.Println("Running netstat inside the container to detect open ports... ", containerID)
+	
+	// Sleep for few seconds to ensure the container is fully up
+	time.Sleep(5 * time.Second) // <-- wait for the container to be fully up
+	
 	// Execute netstat command inside the container
 	cmd := exec.Command("docker", "exec", containerID, "netstat", "-tuln")
 	if err := cmd.Run(); err != nil {
 		return 0, fmt.Errorf("failed to exec netstat: %w", err)
 	}
 	// output, err := cmd.Output()
+	// fmt.Println("Inspecting line:", line)
 	output, err := cmd.CombinedOutput() // <-- not just Output()
 	fmt.Println("Netstat Output:\n", string(output)) // <-- helpful to print it
 	if err != nil {
@@ -151,6 +156,12 @@ func detectPortWithNetstat(containerID string) (int, error) {
 
 	lines := strings.Split(string(output), "\n")
 	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		fmt.Println("Inspecting line:", line) // <-- print each line for debugging
+		// Example line: "tcp        0      0 0.0.0.0:8080"
 		fields := strings.Fields(line)
 		if len(fields) >= 4 && (strings.HasPrefix(fields[0], "tcp") || strings.HasPrefix(fields[0], "udp")) {
 			addr := fields[3] // usually 0.0.0.0:8080

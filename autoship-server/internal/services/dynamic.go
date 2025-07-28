@@ -114,6 +114,7 @@ func GenerateDockerfile(env Environment, repoPath, startCommand string) error {
 	COPY . .
 	%s
 	%s
+	%s
 	`, baseImage, netToolsInstall, installCmd, cmdLine)
 
 	// Write to Dockerfile
@@ -184,27 +185,38 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, error
 	fmt.Println("Detecting Exposed Port PPPPPPPPPPPPPPPPPPPPPPPPPPOOOOOOOOOOOOOOOOOOOOOOOOORRRRRRRRRRRRRRRRRRRRRRTTTTTTTTTTTTTTTTTTTTTTTTTTTT")
 	containerPort, err := utils.DetectExposedPort(tmpContainer)
 	if err != nil {
-		_ = exec.Command("docker", "rm", "-f", tmpContainer).Run()
+		logsCmd := exec.Command("docker", "logs", tmpContainer)
+		logsOutput, _ := logsCmd.CombinedOutput()
+		fmt.Println("Temporary container logs:\n", string(logsOutput))
+
+		// _ = exec.Command("docker", "rm", "-f", tmpContainer).Run()
 		return 0, 0, fmt.Errorf("port detection failed: %w", err)
 	}
 
 	// Step 4: Pick host port
+	fmt.Println("Detected container port in isPortAvailable function:", containerPort)
 	hostPort := containerPort
 	if !utils.IsPortAvailable(hostPort) {
 		hostPort, err = utils.FindFreeHostPort()
 		if err != nil {
-			_ = exec.Command("docker", "rm", "-f", tmpContainer).Run()
+			logsCmd := exec.Command("docker", "logs", tmpContainer)
+			logsOutput, _ := logsCmd.CombinedOutput()
+			fmt.Println("Temporary container logs:\n", string(logsOutput))
+
+			// _ = exec.Command("docker", "rm", "-f", tmpContainer).Run()
 			return 0, 0, fmt.Errorf("failed to find free host port: %w", err)
 		}
 	}
+
+	fmt.Println("Using host port through AuthorizeEC2Port: ", hostPort)
 	if err := utils.AuthorizeEC2Port(hostPort); err != nil {
-		_ = exec.Command("docker", "rm", "-f", tmpContainer).Run()
+		// _ = exec.Command("docker", "rm", "-f", tmpContainer).Run()
 		return 0, 0, fmt.Errorf("EC2 SG error: %w", err)
 	}
 
 	// Optional: Commit container state (e.g., installed files)
 	_ = exec.Command("docker", "commit", tmpContainer, imageTag).Run()
-	_ = exec.Command("docker", "rm", "-f", tmpContainer).Run()
+	// _ = exec.Command("docker", "rm", "-f", tmpContainer).Run()
 
 	fmt.Println("Making                                       final                         Container")
 	// Step 5: Run final container
