@@ -156,16 +156,17 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, error
 	// This avoids conflicts with the final container
 	
 	
-	// if err := exec.Command("docker", "rm", "-f", tmpContainer).Run(); err != nil {
-	// 	// Ignore error if container doesn't exist
-	// 	log.Printf("Warning: Failed to remove existing temporary container %s: %v", tmpContainer, err)
-	// }
+	if err := exec.Command("docker", "rm", "-f", tmpContainer).Run(); err != nil {
+		// Ignore error if container doesn't exist
+		log.Printf("Warning: Failed to remove existing temporary container %s: %v", tmpContainer, err)
+	}
 	
 	
 	
 	// Run the temporary container in detached mode
 	// Use the image tag built earlier
 	fmt.Println("Running temporary container for port detection... ", tmpContainer)
+	
 	// Use the image tag built earlier
 	// Use a simple command that keeps the container running
 	// This is just to keep the container alive for port detection
