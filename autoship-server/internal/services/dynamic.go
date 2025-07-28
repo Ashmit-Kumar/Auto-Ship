@@ -198,7 +198,7 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, error
 		logsOutput, _ := logsCmd.CombinedOutput()
 		fmt.Println("Temporary container logs:\n", string(logsOutput))
 
-		// _ = exec.Command("docker", "rm", "-f", tmpContainer).Run()
+		_ = exec.Command("docker", "rm", "-f", tmpContainer).Run()
 		return 0, 0, fmt.Errorf("port detection failed: %w", err)
 	}
 
@@ -212,20 +212,20 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, error
 			logsOutput, _ := logsCmd.CombinedOutput()
 			fmt.Println("Temporary container logs:\n", string(logsOutput))
 
-			// _ = exec.Command("docker", "rm", "-f", tmpContainer).Run()
+			_ = exec.Command("docker", "rm", "-f", tmpContainer).Run()
 			return 0, 0, fmt.Errorf("failed to find free host port: %w", err)
 		}
 	}
 
 	fmt.Println("Using host port through AuthorizeEC2Port: ", hostPort)
 	if err := utils.AuthorizeEC2Port(hostPort); err != nil {
-		// _ = exec.Command("docker", "rm", "-f", tmpContainer).Run()
+		_ = exec.Command("docker", "rm", "-f", tmpContainer).Run()
 		return 0, 0, fmt.Errorf("EC2 SG error: %w", err)
 	}
 
 	// Optional: Commit container state (e.g., installed files)
 	_ = exec.Command("docker", "commit", tmpContainer, imageTag).Run()
-	// _ = exec.Command("docker", "rm", "-f", tmpContainer).Run()
+	_ = exec.Command("docker", "rm", "-f", tmpContainer).Run()
 
 	fmt.Println("Making                                       final                         Container")
 	// Step 6: Run final container
