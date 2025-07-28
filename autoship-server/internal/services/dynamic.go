@@ -125,7 +125,7 @@ func GenerateDockerfile(env Environment, repoPath, startCommand string) error {
 
 
 // buildAndRunContainer builds the Docker image and runs it on a specified port.
-func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, string, error) {
+func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, error) {
 	// Derive image tag from container name
 	if containerName == "" {
 		return 0, 0, fmt.Errorf("container name cannot be empty")
@@ -135,10 +135,6 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, strin
 	}
 	containerName = strings.TrimSpace(containerName)
 	containerName = strings.ToLower(containerName) // Ensure consistent casing
-
-	// done so that we can use same repo to make two different containers
-	timestamp := time.Now().Unix()
-	containerName := fmt.Sprintf("autoship-%s-%s-%d", username, strings.ToLower(repoName), timestamp) 
 	// Derive image tag from container name
 	imageTag := containerName + ":latest"
 
@@ -257,7 +253,7 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, strin
 		return 0, 0, fmt.Errorf("docker final run failed: %w", err)
 	}
 
-	return containerPort, hostPort, containerName, nil
+	return containerPort, hostPort, nil
 }
 
 
@@ -284,14 +280,16 @@ func FullPipeline(username,repoPath, envContent, startCommand string) (int, int,
 
 	// Step 4: Derive container name from repo
 	repoName := filepath.Base(repoPath)
-	containerName := fmt.Sprintf("autoship-%s-%s", username, strings.ToLower(repoName))
+	// containerName := fmt.Sprintf("autoship-%s-%s", username, strings.ToLower(repoName))
+	timestamp := time.Now().Unix()
+	containerName := fmt.Sprintf("autoship-%s-%s-%d", username, strings.ToLower(repoName), timestamp)
 
 	// Step 5: Build and run container
-	containerPort, hostPort, actualContainerName, err := buildAndRunContainerHybrid(repoPath, containerName)
+	containerPort, hostPort, err := buildAndRunContainerHybrid(repoPath, containerName)
 	if err != nil {
 		return 0, 0, "", fmt.Errorf("container error: %w", err)
 	}
-	containerName = strings.TrimSpace(actualContainerName) // Ensure consistent casing
+
 	log.Printf("Container %s started: hostPort=%d, containerPort=%d", containerName, hostPort, containerPort)
 	return containerPort, hostPort, containerName, nil
 }
