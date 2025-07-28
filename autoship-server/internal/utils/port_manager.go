@@ -38,11 +38,55 @@ func init() {
     Region          = os.Getenv("AWS_REGION")
 }
 
-// GetOrReserveValidFreePort finds an unused port and opens it in the EC2 security group
+// // GetOrReserveValidFreePort finds an unused port and opens it in the EC2 security group
+// func GetOrReserveValidFreePort(containerName string) (int, error) {
+// 	ctx := context.Background()
+
+// 	// 1. Connect to MongoDB
+// 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(MongoURI))
+// 	if err != nil {
+// 		return 0, err
+// 	}
+// 	defer client.Disconnect(ctx)
+
+// 	coll := client.Database(DatabaseName).Collection(CollectionName)
+
+// 	// 2. Search for an available port in DB
+// 	var portDoc struct {
+// 		Port int `bson:"port"`
+// 	}
+// 	err = coll.FindOneAndUpdate(ctx, bson.M{"status": "available"}, bson.M{
+// 		"$set": bson.M{"status": "used", "containerName": containerName, "timestamp": time.Now()},
+// 	}).Decode(&portDoc)
+// 	if err == mongo.ErrNoDocuments {
+// 		// No free ports in DB; optionally generate a new one
+// 		return 0, fmt.Errorf("no free ports in DB")
+// 	} else if err != nil {
+// 		return 0, err
+// 	}
+
+// 	// 3. Check if it's free on this machine
+// 	if !IsPortAvailable(portDoc.Port) {
+// 		// Update status back to "available"
+// 		_, _ = coll.UpdateOne(ctx, bson.M{"port": portDoc.Port}, bson.M{"$set": bson.M{"status": "available"}})
+// 		return GetOrReserveValidFreePort(containerName)
+// 	}
+
+// 	// 4. Open port in EC2 Security Group
+// 	if err := AuthorizeEC2Port(portDoc.Port); err != nil {
+// 		log.Printf("Failed to open port %d in SG: %v", portDoc.Port, err)
+// 		return 0, err
+// 	}
+
+// 	return portDoc.Port, nil
+// }
+
+
+
+
 func GetOrReserveValidFreePort(containerName string) (int, error) {
 	ctx := context.Background()
 
-	// 1. Connect to MongoDB
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(MongoURI))
 	if err != nil {
 		return 0, err
@@ -51,35 +95,49 @@ func GetOrReserveValidFreePort(containerName string) (int, error) {
 
 	coll := client.Database(DatabaseName).Collection(CollectionName)
 
-	// 2. Search for an available port in DB
+	// Step 1: Get the latest used or available port
 	var portDoc struct {
 		Port int `bson:"port"`
 	}
-	err = coll.FindOneAndUpdate(ctx, bson.M{"status": "available"}, bson.M{
-		"$set": bson.M{"status": "used", "containerName": containerName, "timestamp": time.Now()},
-	}).Decode(&portDoc)
-	if err == mongo.ErrNoDocuments {
-		// No free ports in DB; optionally generate a new one
-		return 0, fmt.Errorf("no free ports in DB")
-	} else if err != nil {
-		return 0, err
+	opts := options.FindOne().SetSort(bson.D{{"port", -1}})
+	err = coll.FindOne(ctx, bson.M{}, opts).Decode(&portDoc)
+	startPort := 2000 // default fallback
+	if err == nil {
+		startPort = portDoc.Port
 	}
 
-	// 3. Check if it's free on this machine
-	if !IsPortAvailable(portDoc.Port) {
-		// Update status back to "available"
-		_, _ = coll.UpdateOne(ctx, bson.M{"port": portDoc.Port}, bson.M{"$set": bson.M{"status": "available"}})
-		return GetOrReserveValidFreePort(containerName)
+	// Step 2: Try finding a free port by incrementing
+	for port := startPort; port <= 65535; port++ {
+		if IsPortAvailable(port) {
+			// Try reserving in DB (ensure atomicity in multi-user environments)
+			_, err := coll.UpdateOne(ctx,
+				bson.M{"port": port},
+				bson.M{
+					"$setOnInsert": bson.M{
+						"port":          port,
+						"status":        "used",
+						"containerName": containerName,
+						"timestamp":     time.Now(),
+					},
+				},
+				options.Update().SetUpsert(true),
+			)
+			if err == nil {
+				// Open in EC2 SG
+				if err := AuthorizeEC2Port(port); err != nil {
+					log.Printf("Failed to open port %d in SG: %v", port, err)
+					continue
+				}
+				return port, nil
+			}
+		}
 	}
 
-	// 4. Open port in EC2 Security Group
-	if err := AuthorizeEC2Port(portDoc.Port); err != nil {
-		log.Printf("Failed to open port %d in SG: %v", portDoc.Port, err)
-		return 0, err
-	}
-
-	return portDoc.Port, nil
+	return 0, fmt.Errorf("no free ports found")
 }
+
+
+
 
 func IsPortAvailable(port int) bool {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))

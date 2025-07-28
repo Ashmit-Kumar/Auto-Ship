@@ -203,20 +203,31 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, error
 		return 0, 0, fmt.Errorf("port detection failed: %w", err)
 	}
 
-	// Step 5: Pick host port
-	fmt.Println("Detected container port in isPortAvailable function:", containerPort)
-	hostPort := containerPort
-	if !utils.IsPortAvailable(hostPort) {
-		hostPort, err = utils.FindFreeHostPort()
-		if err != nil {
-			logsCmd := exec.Command("docker", "logs", tmpContainer)
-			logsOutput, _ := logsCmd.CombinedOutput()
-			fmt.Println("Temporary container logs:\n", string(logsOutput))
+	// // Step 5: Pick host port
+	// fmt.Println("Detected container port in isPortAvailable function:", containerPort)
+	// hostPort := containerPort
+	// if !utils.IsPortAvailable(hostPort) {
+	// 	hostPort, err = utils.FindFreeHostPort()
+	// 	if err != nil {
+	// 		logsCmd := exec.Command("docker", "logs", tmpContainer)
+	// 		logsOutput, _ := logsCmd.CombinedOutput()
+	// 		fmt.Println("Temporary container logs:\n", string(logsOutput))
 
-			_ = exec.Command("docker", "rm", "-f", tmpContainer).Run()
-			return 0, 0, fmt.Errorf("failed to find free host port: %w", err)
-		}
-	}
+	// 		_ = exec.Command("docker", "rm", "-f", tmpContainer).Run()
+	// 		return 0, 0, fmt.Errorf("failed to find free host port: %w", err)
+	// 	}
+	// }
+	
+	fmt.Println("Finding free host port using MongoDB ...")
+    hostPort, err := utils.GetOrReserveValidFreePort(containerName)
+    if err != nil {
+        logsCmd := exec.Command("docker", "logs", tmpContainer)
+		logsOutput, _ := logsCmd.CombinedOutput()
+		fmt.Println("Temporary container logs:\n", string(logsOutput))
+
+		_ = exec.Command("docker", "rm", "-f", tmpContainer).Run()
+		return 0, 0, fmt.Errorf("failed to find free host port: %w", err)
+    }
 
 	fmt.Println("Using host port through AuthorizeEC2Port: ", hostPort)
 	if err := utils.AuthorizeEC2Port(hostPort); err != nil {
