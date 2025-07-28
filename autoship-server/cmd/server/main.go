@@ -65,13 +65,21 @@ func main() {
 	// app.Get("/auth/github/callback", api.GitHubCallback)
 	app.Get("/github/callback", api.GitHubCallback)
 	app.Post("/projects/submit",  middleware.IsAuthenticated ,api.HandleRepoSubmit)
+
+	// Get user projects
+	app.Get("/projects", middleware.IsAuthenticated, api.GetUserProjects)
+	// Get a specific project
+	// Write code for Specific project
+
+	// Delete a project
+	app.Delete("/projects/:containerName", middleware.IsAuthenticated, api.DeleteDeployment)
+
 	// Serve everything under static as public files
 	app.Static("/static", "./static", fiber.Static{
 		Browse:     true,
 		Index:      "index.html",
 		Compress:   true,
 	})
-	app.Get("/my-projects", middleware.IsAuthenticated, api.GetUserProjects)
 
 	// to serve static files from the static directory like scripts, styles, etc.
 	app.Get("/autoship-server/static/:username/:repo/*", func(c *fiber.Ctx) error {
