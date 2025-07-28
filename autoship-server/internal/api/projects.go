@@ -147,3 +147,19 @@ func GetUserProjects(c *fiber.Ctx) error {
 
 	return c.JSON(projects)
 }
+
+
+// DeleteDeployment deletes a project deployment by container name
+func DeleteDeployment(c *fiber.Ctx) error {
+    containerName := c.Params("containerName")
+    if containerName == "" {
+        return fiber.NewError(fiber.StatusBadRequest, "containerName is required")
+    }
+    // Remove the Docker container
+    _ = exec.Command("docker", "rm", "-f", containerName).Run()
+    // Optionally: Remove from DB
+    if err := db.DeleteProjectByContainerName(containerName); err != nil {
+        return fiber.NewError(fiber.StatusInternalServerError, "Failed to delete project from DB")
+    }
+    return c.JSON(fiber.Map{"message": "Deployment deleted"})
+}
