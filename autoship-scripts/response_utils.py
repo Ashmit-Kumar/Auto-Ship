@@ -7,8 +7,8 @@ import os
 logging.basicConfig(level=logging.INFO)
 
 # Configure this to match your Go app's container hostname or Docker network alias
-GO_APP_HOST = os.getenv("GO_APP_HOST", "autoship-server")
-GO_APP_PORT = os.getenv("GO_APP_PORT", "3000")  # or whatever your app uses
+GO_APP_HOST = os.getenv("GO_APP_HOST")
+GO_APP_PORT = os.getenv("GO_APP_PORT")  # or whatever your app uses
 
 def send_status_to_go_app(request_id: str, subdomain: str, success: bool, message: str = "", port: int = None, s3_url: str = None):
     """

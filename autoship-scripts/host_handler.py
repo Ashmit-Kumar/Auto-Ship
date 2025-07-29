@@ -8,7 +8,7 @@ from config import *
 from nginx_utils import write_nginx_conf_dynamic, write_nginx_conf_static, reload_nginx
 from ssl_utils import generate_ssl
 from dns_utils import add_dns_record
-from response_utils import send_status
+from response_utils import send_status_to_go_app as send_status
 from pathlib import Path
 
 DEPLOY_FILE = "deploy-requests.json"
