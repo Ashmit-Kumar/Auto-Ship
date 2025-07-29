@@ -98,9 +98,28 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
 
         // hostedURL = fmt.Sprintf("http://%s:%d", ec2Host, hostPort)
 		hostedURL = fmt.Sprintf("https://%s", subdomain)
-		if err := writeNginxConf(subdomain, false, fmt.Sprintf("localhost:%d", hostPort)); err != nil {
-    		return fiber.NewError(fiber.StatusInternalServerError, "Failed to write NGINX conf: "+err.Error())
+		// Step 1: Create deployment request JSON
+		requestID := utils.GenerateRandomID()
+		deployRequest := map[string]interface{}{
+			"id":         requestID,
+			"subdomain":  subdomain,
+			"projectType": projectType,
+			"target":     fmt.Sprintf("localhost:%d", hostPort),
+			"status":     "pending",
 		}
+
+		// Step 2: Append to /tmp/deploy-requests.json
+		if err := utils.AppendJSONToFile("/tmp/deploy-requests.json", deployRequest); err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, "Failed to queue deployment: "+err.Error())
+		}
+
+		// Step 3: Wait for response (polling with timeout)
+		response, err := utils.WaitForResponse("/tmp/deploy-responses.json", requestID, 60*time.Second)
+		if err != nil || response["status"] != "success" {
+			return fiber.NewError(fiber.StatusInternalServerError, "Deployment failed: "+response["error"])
+		}
+		hostedURL = response["url"].(string)
+
     }
 		
 	// encrypt the hosted URL for security
