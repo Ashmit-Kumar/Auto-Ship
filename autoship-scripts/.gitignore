@@ -10,7 +10,7 @@ venv/
 env/
 ENV/
 .venv/
-.env/
+.env
 
 # Distribution / packaging
 build/
