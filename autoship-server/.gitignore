@@ -37,3 +37,5 @@ static/
 # Temp files
 *.tmp
 *.bak
+
+../autoship-scripts/.env
