@@ -35,3 +35,9 @@ def write_nginx_conf_static(subdomain, s3_url):
     with open(f"/etc/nginx/sites-available/{subdomain}", "w") as f:
         f.write(config)
     os.system(f"ln -sf /etc/nginx/sites-available/{subdomain} /etc/nginx/sites-enabled/{subdomain}")
+
+
+def reload_nginx():
+    os.system("nginx -s reload")
+    print("Nginx configuration reloaded.")
+
