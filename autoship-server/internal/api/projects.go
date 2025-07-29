@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 	"os/exec"
-	// "context"
-    // "go.mongodb.org/mongo-driver/bson"
 	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/db"
 	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/models"
 	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/services"
@@ -20,8 +18,8 @@ import (
 
 // RepoRequest struct defines the structure of the request for submitting a repo
 type RepoRequest struct {
-	RepoURL string `json:"repoURL"`
-	EnvContent string `json:"envContent,omitempty"` // Optional field for .env content
+	RepoURL      string `json:"repoURL"`
+	EnvContent   string `json:"envContent,omitempty"` // Optional field for .env content
 	StartCommand string `json:"startCommand"`
 	// IN future, add fields for branch, commit 
 
@@ -30,6 +28,8 @@ type RepoRequest struct {
 // HandleRepoSubmit handles the submission of a GitHub repository URL,
 // clones the repository, detects the project type, and handles the hosting.
 func HandleRepoSubmit(c *fiber.Ctx) error {
+	domain := os.Getenv("HOSTINGER_DOMAIN") // e.g. a.com
+	ec2IP := os.Getenv("EC2_PUBLIC_IP")
 	var req RepoRequest
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid request")
@@ -58,7 +58,7 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
-
+	
 	// Detect the type of the project (static or dynamic)
 	projectType := services.DetectProjectType(path)
 	if projectType == "unknown" {
@@ -84,6 +84,8 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
         // Run FullPipeline to detect environment, write Dockerfile, build & run
         containerPort, hostPort, containerName, err = services.FullPipeline(username, path, req.EnvContent, req.StartCommand)
  // returns hostPort
+		subdomain := generateSubdomain(repoName, domain)
+		// subdomain := fmt.Sprintf("%s.%s", repoName, domain)+
         if err != nil {
             _ = os.RemoveAll(path)
             return fiber.NewError(fiber.StatusInternalServerError, "Failed to deploy dynamic project: "+err.Error())
@@ -93,7 +95,12 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
         if ec2Host == "" {
             ec2Host = "localhost"
         }
-        hostedURL = fmt.Sprintf("http://%s:%d", ec2Host, hostPort)
+
+        // hostedURL = fmt.Sprintf("http://%s:%d", ec2Host, hostPort)
+		hostedURL = fmt.Sprintf("https://%s", subdomain)
+		if err := writeNginxConf(subdomain, false, fmt.Sprintf("localhost:%d", hostPort)); err != nil {
+    		return fiber.NewError(fiber.StatusInternalServerError, "Failed to write NGINX conf: "+err.Error())
+		}
     }
 		
 	// encrypt the hosted URL for security
