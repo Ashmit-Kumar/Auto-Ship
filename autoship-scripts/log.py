@@ -28,3 +28,6 @@ file_handler.setFormatter(logging.Formatter(
     '{"time": "%(asctime)s", "level": "%(levelname)s", "message": "%(message)s", "subdomain": "%(subdomain)s", "request_id": "%(request_id)s", "error": "%(error)s"}'
 ))
 logger.addHandler(file_handler)
+
+logging.root = logger
+logging.getLogger().handlers = logger.handlers
