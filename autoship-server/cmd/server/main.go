@@ -66,6 +66,9 @@ func main() {
 	app.Get("/github/callback", api.GitHubCallback)
 	app.Post("/projects/submit",  middleware.IsAuthenticated ,api.HandleRepoSubmit)
 
+	// response for deployment status
+	app.Post("/api/deployment-status", DeploymentStatusHandler)
+
 	// Get user projects
 	app.Get("/projects", middleware.IsAuthenticated, api.GetUserProjects)
 	// Get a specific project
