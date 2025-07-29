@@ -36,6 +36,10 @@ def validate_string_param(param: str, name: str, allow_empty: bool = False) -> b
 
 def safe_read_json_file(path):
     """Read JSON file with file locking."""
+    print(f"Reading JSON file: {path}")
+    if not os.path.exists(path):
+        logging.warning(f"File {path} does not exist", extra={"subdomain": "", "request_id": "", "error": "File not found"})
+        return []
     try:
         with open(path, "r") as f:
             fcntl.flock(f.fileno(), fcntl.LOCK_SH)
