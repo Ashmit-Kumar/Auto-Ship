@@ -6,6 +6,8 @@ from pathlib import Path
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import fcntl
+import re
+
 
 from config import validate_env_vars
 from nginx_utils import write_nginx_conf_dynamic, write_nginx_conf_static, reload_nginx
