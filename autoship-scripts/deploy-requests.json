@@ -1,0 +1,8 @@
+[
+  {
+    "id": "static-001",
+    "project_type": "static",
+    "subdomain": "portfolio.maavaishnoconstruction.site",
+    "s3_url": "http://your-s3-bucket.s3.amazonaws.com/index.html"
+  }
+]

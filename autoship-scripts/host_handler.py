@@ -91,7 +91,11 @@ def main():
 
             with open(DEPLOY_FILE, "r") as f:
                 data = f.read()
-
+            if not data.strip():
+                time.sleep(1)
+                continue
+            print("[DEBUG] Raw data read from file:")
+            print(data)  # <-- Add this line
             if data == last_data:
                 time.sleep(1)
                 continue
@@ -103,8 +107,8 @@ def main():
             for req in requests:
                 handle_request(req, processed_ids)
 
-        except json.JSONDecodeError:
-            print("[WARN] deploy-requests.json not ready or corrupted.")
+        except json.JSONDecodeError as e:
+            print(f"[WARN] deploy-requests.json not ready or corrupted. Reason: {e}")
         except Exception as e:
             print(f"[ERROR] {e}")
         
