@@ -27,10 +27,15 @@ def read_json_file(file_path):
         return json.loads(content)
 
 
-DEPLOY_FILE = read_json_file("deploy-requests.json")
-# DEPLOY_FILE_BACKUP = read_json_file("deploy-requests.json.bak")
+DEPLOY_FILE_PATH = "deploy-requests.json"
+DEPLOY_FILE = read_json_file(DEPLOY_FILE_PATH)
 PROCESSED_FILE = read_json_file("processed.json")
 PROCESSED_BACKUP_FILE = read_json_file("processed.json.bak")
+
+# DEPLOY_FILE = read_json_file("deploy-requests.json")
+# DEPLOY_FILE_BACKUP = read_json_file("deploy-requests.json.bak")
+# PROCESSED_FILE = read_json_file("processed.json")
+PROCESSED_BACKUP_FILE ="processed.json.bak"
 
 
 
