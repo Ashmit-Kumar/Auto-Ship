@@ -195,7 +195,7 @@ def main():
     validate_env_vars()
     logging.info("Watching for deployment requests...", extra={"subdomain": "", "request_id": "", "error": ""})
     observer = Observer()
-    observer.schedule(DeployFileHandler(), path=DEPLOY_FILE, recursive=False)
+    observer.schedule(DeployFileHandler(), path=DEPLOY_FILE_PATH, recursive=False)
     observer.start()
     try:
         while True:
