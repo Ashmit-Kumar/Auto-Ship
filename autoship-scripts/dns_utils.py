@@ -1,121 +1,31 @@
 import requests
 import logging
-import os
-import re
-from tenacity import retry, stop_after_attempt, wait_exponential
+from config import HOSTINGER_API_KEY, HOSTINGER_ZONE_ID
 
-# Configure structured logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='{"time": "%(asctime)s", "level": "%(levelname)s", "message": "%(message)s", "subdomain": "%(subdomain)s", "error": "%(error)s"}')
+HOSTINGER_API_URL = f"https://api.hostinger.com/v1/zones/{HOSTINGER_ZONE_ID}/records"
 
-# Configurable API settings
-HOSTINGER_API_TOKEN = os.getenv("HOSTINGER_API_TOKEN")
-HOSTINGER_API_BASE_URL = os.getenv("HOSTINGER_API_BASE_URL")
-DNS_TTL = int(os.getenv("DNS_TTL"))
-
-# Validate API token
-if not HOSTINGER_API_TOKEN:
-    raise ValueError("HOSTINGER_API_TOKEN environment variable is required")
-HEADERS = {
-    "Authorization": f"Bearer {HOSTINGER_API_TOKEN}",
-    "Content-Type": "application/json"
-}
-
-
-def validate_subdomain(subdomain: str) -> bool:
-    """Validate subdomain to prevent invalid or unsafe inputs."""
-    print(
-        f"Welcome to validate_subdomain! This is inside dns_utils.py. This function will validate the subdomain: {subdomain}")
-    if not isinstance(subdomain, str):
-        logging.error(
-            "Subdomain must be a string",
-            extra={
-                "subdomain": str(subdomain),
-                "error": "Invalid type"})
-        return False
-    if not re.match(r'^[a-zA-Z0-9][a-zA-Z0-9\-\.]*[a-zA-Z0-9]$', subdomain):
-        logging.error(
-            "Invalid subdomain format",
-            extra={
-                "subdomain": subdomain,
-                "error": "Invalid characters"})
-        return False
-    if '..' in subdomain or '/' in subdomain:
-        logging.error(
-            "Subdomain contains unsafe characters",
-            extra={
-                "subdomain": subdomain,
-                "error": "Path traversal risk"})
-        return False
-    return True
-
-
-@retry(stop=stop_after_attempt(3),
-       wait=wait_exponential(multiplier=1, min=2, max=10))
-def add_dns_record(subdomain: str, public_ip: str) -> bool:
-    print(
-        f"Welcome to add_dns_record! This is inside dns_utils.py. This function will add a DNS record for {subdomain} pointing to {public_ip}.")
-    """
-    Adds an A record for subdomain -> public_ip using Hostinger DNS API.
-    """
-    if not validate_subdomain(subdomain):
-        raise ValueError(f"Invalid subdomain: {subdomain}")
-
+def add_dns_record(subdomain, ip_address):
     try:
-        parts = subdomain.split(".")
-        if len(parts) < 3:
-            logging.error("Subdomain must be in the format sub.domain.tld", extra={
-                          "subdomain": subdomain, "error": "Invalid format"})
-            return False
-
-        domain = ".".join(parts[-2:])
-        record_name = ".".join(parts[:-2]) or "@"  # Use "@" for root subdomain
-
-        payload = {
-            "type": "A",
-            "name": record_name,
-            "value": public_ip,
-            "ttl": DNS_TTL
+        headers = {
+            "Authorization": f"Bearer {HOSTINGER_API_KEY}",
+            "Content-Type": "application/json"
         }
 
-        logging.info(
-            f"Adding A record for {subdomain} → {public_ip}",
-            extra={
-                "subdomain": subdomain,
-                "error": ""})
-        response = requests.post(
-            f"{HOSTINGER_API_BASE_URL}/domains/{domain}/records",
-            headers=HEADERS,
-            json=payload
-        )
+        name = subdomain.split('.')[0]  # Only the subdomain, like "test"
+        data = {
+            "type": "A",
+            "name": name,
+            "value": ip_address,
+            "ttl": 300
+        }
 
-        if response.status_code == 201:
-            logging.info(
-                "DNS record created",
-                extra={
-                    "subdomain": subdomain,
-                    "error": ""})
+        response = requests.post(HOSTINGER_API_URL, headers=headers, json=data)
+        if response.status_code in (200, 201):
+            logging.info(f"DNS record added: {subdomain} -> {ip_address}")
             return True
         else:
-            try:
-                error_msg = response.json()
-            except ValueError:
-                error_msg = response.text
-            logging.error(
-                "Failed to create DNS record",
-                extra={
-                    "subdomain": subdomain,
-                    "error": str(error_msg)})
+            logging.error(f"Failed to add DNS: {response.status_code}, {response.text}")
             return False
-    except requests.RequestException as e:
-        logging.error("Network error in add_dns_record", extra={
-                      "subdomain": subdomain, "error": str(e)})
-        return False
     except Exception as e:
-        logging.error(
-            "Unexpected error in add_dns_record",
-            extra={
-                "subdomain": subdomain,
-                "error": str(e)})
+        logging.error(f"Exception adding DNS record: {e}")
         return False
