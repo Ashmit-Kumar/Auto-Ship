@@ -16,27 +16,9 @@ from dns_utils import add_dns_record
 from response_utils import send_status_to_go_app as send_status
 import log  # Import centralized logging configuration
 
-def read_json_file(file_path):
-    if not os.path.exists(file_path):
-        return []
-
-    with open(file_path, 'r') as f:
-        content = f.read().strip()
-        if not content:
-            return []  # Return empty list if file is empty
-        return json.loads(content)
-
-
-DEPLOY_FILE_PATH = "deploy-requests.json"
-DEPLOY_FILE = read_json_file(DEPLOY_FILE_PATH)
-PROCESSED_FILE = read_json_file("processed.json")
-PROCESSED_BACKUP_FILE = read_json_file("processed.json.bak")
-
-# DEPLOY_FILE = read_json_file("deploy-requests.json")
-# DEPLOY_FILE_BACKUP = read_json_file("deploy-requests.json.bak")
-# PROCESSED_FILE = read_json_file("processed.json")
-PROCESSED_BACKUP_FILE ="processed.json.bak"
-
+DEPLOY_FILE = "deploy-requests.json"
+PROCESSED_FILE = "processed.json"
+PROCESSED_BACKUP_FILE = "processed.json.bak"
 
 
 def validate_string_param(param: str, name: str, allow_empty: bool = False) -> bool:
@@ -195,7 +177,7 @@ def main():
     validate_env_vars()
     logging.info("Watching for deployment requests...", extra={"subdomain": "", "request_id": "", "error": ""})
     observer = Observer()
-    observer.schedule(DeployFileHandler(), path=DEPLOY_FILE_PATH, recursive=False)
+    observer.schedule(DeployFileHandler(), path=DEPLOY_FILE, recursive=False)
     observer.start()
     try:
         while True:
