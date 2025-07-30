@@ -16,9 +16,21 @@ from dns_utils import add_dns_record
 from response_utils import send_status_to_go_app as send_status
 import log  # Import centralized logging configuration
 
-DEPLOY_FILE = "deploy-requests.json"
-PROCESSED_FILE = "processed.json"
-PROCESSED_BACKUP_FILE = "processed.json.bak"
+DEPLOY_FILE = read_json_file("deploy-requests.json")
+# DEPLOY_FILE_BACKUP = read_json_file("deploy-requests.json.bak")
+PROCESSED_FILE = read_json_file("processed.json")
+PROCESSED_BACKUP_FILE = read_json_file("processed.json.bak")
+
+def read_json_file(file_path):
+    if not os.path.exists(file_path):
+        return []
+
+    with open(file_path, 'r') as f:
+        content = f.read().strip()
+        if not content:
+            return []  # Return empty list if file is empty
+        return json.loads(content)
+
 
 def validate_string_param(param: str, name: str, allow_empty: bool = False) -> bool:
     print(f"Welcome to validate_string_param! This function will validate the {name} parameter.")
