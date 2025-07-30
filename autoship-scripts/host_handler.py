@@ -21,6 +21,7 @@ PROCESSED_FILE = "processed.json"
 PROCESSED_BACKUP_FILE = "processed.json.bak"
 
 def validate_string_param(param: str, name: str, allow_empty: bool = False) -> bool:
+    print(f"Welcome to validate_string_param! This function will validate the {name} parameter.")
     """Validate string parameters to prevent invalid or unsafe inputs."""
     if not isinstance(param, str):
         logging.error(f"{name} must be a string", extra={"subdomain": "", "request_id": "", "error": f"Invalid type: {type(param)}"})
@@ -32,11 +33,13 @@ def validate_string_param(param: str, name: str, allow_empty: bool = False) -> b
         logging.error(f"Invalid {name} format", extra={"subdomain": param if name == "subdomain" else "", "request_id": param if name == "request_id" else "", "error": "Invalid characters"})
         return False
     if '..' in param or '/' in param or ';' in param:
+        print(f"{name} contains unsafe characters: {param}")
         logging.error(f"{name} contains unsafe characters", extra={"subdomain": param if name == "subdomain" else "", "request_id": param if name == "request_id" else "", "error": "Injection risk"})
         return False
     return True
 
 def safe_read_json_file(path):
+    print("Welcome to safe_read_json_file! This function will read a JSON file with file locking.")
     """Read JSON file with file locking."""
     print(f"Reading JSON file: {path}")
     if not os.path.exists(path):
@@ -57,10 +60,12 @@ def safe_read_json_file(path):
         raise ValueError(f"Error reading JSON file {path}: {e}")
 
 def load_json(path):
+    print("Welcome to load_json! This function will load a JSON file or return an empty list if the file doesn't exist.")
     """Load JSON file or return empty list if file doesn't exist."""
     return safe_read_json_file(path) if os.path.exists(path) else []
 
 def save_json(path, data):
+    print("Welcome to save_json! This function will save JSON data with file locking and backup.")
     """Save JSON data with file locking and backup."""
     try:
         # Create backup of existing file
@@ -81,6 +86,7 @@ def save_json(path, data):
         raise ValueError(f"Error saving JSON to {path}: {e}")
 
 def mark_as_processed(processed_ids, req_id):
+    print("Welcome to mark_as_processed! This function will mark a request as processed.")
     """Mark request as processed and limit to 1000 entries."""
     processed_ids.append(req_id)
     if len(processed_ids) > 1000:
@@ -88,6 +94,7 @@ def mark_as_processed(processed_ids, req_id):
     save_json(PROCESSED_FILE, processed_ids)
 
 def handle_request(req, processed_ids):
+    print("Welcome to handle_request! This function will process a single deployment request.")
     """Process a single deployment request."""
     req_id = req.get("id")
     subdomain = req.get("subdomain")
@@ -108,7 +115,7 @@ def handle_request(req, processed_ids):
         logging.info(f"Request {req_id} already processed", extra={"subdomain": subdomain, "request_id": req_id, "error": ""})
         return
 
-    logging.info(f"Processing: {subdomain} ({project_type})", extra={"subdomain": subdomain, "request_id": req_id, "error": ""})
+    logging.info(f"Processing this request in handle_request: {subdomain} ({project_type})", extra={"subdomain": subdomain, "request_id": req_id, "error": ""})
     try:
         if project_type == "dynamic":
             port = req.get("port")
@@ -146,11 +153,13 @@ def handle_request(req, processed_ids):
 class DeployFileHandler(FileSystemEventHandler):
     """Handle file modifications for deploy-requests.json."""
     def on_modified(self, event):
+        print("Welcome to DeployFileHandler! This class handles file modifications for deploy-requests.json.")
         if event.src_path.endswith(DEPLOY_FILE):
             logging.info("deploy-requests.json modified", extra={"subdomain": "", "request_id": "", "error": ""})
             process_requests()
 
 def process_requests():
+    print("Welcome to process requests! function This function will process all requests in deploy-requests.json.")
     """Process all requests in deploy-requests.json."""
     try:
         requests = safe_read_json_file(DEPLOY_FILE)
