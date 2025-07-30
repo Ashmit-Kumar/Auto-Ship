@@ -1,7 +1,14 @@
-{
-    "id": "static-001",
+[
+  {
+    "id": "req123",
+    "subdomain": "test.example.site",
     "project_type": "static",
-    "subdomain": "portfolio.maavaishnoconstruction.site",
-    "s3_url": "http://your-s3-bucket.s3.amazonaws.com/index.html"
-}
-
+    "s3_url": "https://s3.amazonaws.com/bucket/test"
+  },
+  {
+    "id": "req456",
+    "subdomain": "dynamic.example.com",
+    "project_type": "dynamic",
+    "port": 3000
+  }
+]
