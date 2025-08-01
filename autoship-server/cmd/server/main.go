@@ -74,7 +74,7 @@ func main() {
 	// Get a specific project
 	// Write code for Specific project
 
-	// Delete a project
+	// Delete a project deployment
 	app.Delete("/projects/:containerName", middleware.IsAuthenticated, api.DeleteDeployment)
 
 	// Serve everything under static as public files
