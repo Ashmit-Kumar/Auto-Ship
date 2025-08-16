@@ -11,29 +11,29 @@ import (
 
 func DetectProjectType(projectPath string) string {
 	// Check if there are any files in the projectPath
-    hasFiles := false
+	hasFiles := false
 	entries, err := os.ReadDir(projectPath)
-    if err != nil || len(entries) == 0 {
-        fmt.Println("Project path is empty or cannot be read:", projectPath)
-        return "unknown"
+	if err != nil || len(entries) == 0 {
+		fmt.Println("Project path is empty or cannot be read:", projectPath)
+		return "unknown"
 	}
 	fmt.Println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:", len(entries))
 	for _, entry := range entries {
-        if !entry.IsDir() {
-            hasFiles = true
-            break
-        }
-    }
-    if !hasFiles {
-        fmt.Println("Project path is empty (no files):", projectPath)
-        return "unknown"
-    }
+		if !entry.IsDir() {
+			hasFiles = true
+			break
+		}
+	}
+	if !hasFiles {
+		fmt.Println("Project path is empty (no files):", projectPath)
+		return "unknown"
+	}
 	commonDirs := []string{
-		".",             // root
-		"public",        // React, Vite, etc.
-		"frontend",      // custom structure
-		"dist",          // production build
-		"build",         // output folder
+		".",        // root
+		"public",   // React, Vite, etc.
+		"frontend", // custom structure
+		"dist",     // production build
+		"build",    // output folder
 	}
 	fmt.Println("Detecting project type in:", projectPath)
 
@@ -71,4 +71,3 @@ func DetectProjectType(projectPath string) string {
 	}
 	return "unknown"
 }
-

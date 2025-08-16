@@ -115,4 +115,3 @@ func getContentTypeByExtension(filePath string) string {
 		return "application/octet-stream"
 	}
 }
-

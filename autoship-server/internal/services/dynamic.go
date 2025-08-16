@@ -3,13 +3,13 @@ package services
 import (
 	"fmt"
 	// "io/ioutil"
-	"time"
+	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/utils"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/utils"
+	"time"
 )
 
 // Environment represents the type of backend environment detected.
@@ -55,8 +55,6 @@ func detectEnvironment(repoPath string) Environment {
 		return EnvUnknown
 	}
 
-	
-
 	switch {
 	case foundNode:
 		fmt.Println("Detected Node.js environment")
@@ -71,7 +69,6 @@ func detectEnvironment(repoPath string) Environment {
 		return EnvUnknown
 	}
 }
-
 
 // writeDockerfile generates a Dockerfile based on the detected environment.
 // GenerateDockerfile creates a Dockerfile dynamically using detected environment and user-provided startCommand.
@@ -123,7 +120,6 @@ func GenerateDockerfile(env Environment, repoPath, startCommand string) error {
 	return os.WriteFile(dockerfilePath, []byte(dockerfile), 0644)
 }
 
-
 // buildAndRunContainer builds the Docker image and runs it on a specified port.
 func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, error) {
 	// Derive image tag from container name
@@ -154,19 +150,16 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, error
 	// Create a temporary container to detect exposed port
 	// Use the same image tag but with a different name
 	// This avoids conflicts with the final container
-	
-	
+
 	// if err := exec.Command("docker", "rm", "-f", tmpContainer).Run(); err != nil {
 	// 	// Ignore error if container doesn't exist
 	// 	log.Printf("Warning: Failed to remove existing temporary container %s: %v", tmpContainer, err)
 	// }
-	
-	
-	
+
 	// Run the temporary container in detached mode
 	// Use the image tag built earlier
 	fmt.Println("Running temporary container for port detection... ", tmpContainer)
-	
+
 	// Use the image tag built earlier
 	// Use a simple command that keeps the container running
 	// This is just to keep the container alive for port detection
@@ -217,17 +210,17 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, error
 	// 		return 0, 0, fmt.Errorf("failed to find free host port: %w", err)
 	// 	}
 	// }
-	
+
 	fmt.Println("Finding free host port using MongoDB ...")
-    hostPort, err := utils.GetOrReserveValidFreePort(containerName)
-    if err != nil {
-        logsCmd := exec.Command("docker", "logs", tmpContainer)
+	hostPort, err := utils.GetOrReserveValidFreePort(containerName)
+	if err != nil {
+		logsCmd := exec.Command("docker", "logs", tmpContainer)
 		logsOutput, _ := logsCmd.CombinedOutput()
 		fmt.Println("Temporary container logs:\n", string(logsOutput))
 
 		_ = exec.Command("docker", "rm", "-f", tmpContainer).Run()
 		return 0, 0, fmt.Errorf("failed to find free host port: %w", err)
-    }
+	}
 
 	fmt.Println("Using host port through AuthorizeEC2Port: ", hostPort)
 	if err := utils.AuthorizeEC2Port(hostPort); err != nil {
@@ -256,10 +249,8 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, error
 	return containerPort, hostPort, nil
 }
 
-
-
 // FullPipeline executes the full flow: detects env, generates Dockerfile, builds, and runs container.
-func FullPipeline(username,repoPath, envContent, startCommand string) (int, int, string, error) {
+func FullPipeline(username, repoPath, envContent, startCommand string) (int, int, string, error) {
 	// Step 1: Save .env if provided
 	if envContent != "" {
 		if err := utils.SaveEnvFile(repoPath, envContent); err != nil {
@@ -293,4 +284,3 @@ func FullPipeline(username,repoPath, envContent, startCommand string) (int, int,
 	log.Printf("Container %s started: hostPort=%d, containerPort=%d", containerName, hostPort, containerPort)
 	return containerPort, hostPort, containerName, nil
 }
-

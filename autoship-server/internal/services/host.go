@@ -23,12 +23,11 @@ func DetectHostProjectType(path string) string {
 		return nil
 	})
 
-		if hasPackageJSON {
-			return "dynamic"
-		}
-		if hasHTML {
-			return "static"
-		}
-		return "unknown"
+	if hasPackageJSON {
+		return "dynamic"
 	}
-
+	if hasHTML {
+		return "static"
+	}
+	return "unknown"
+}
