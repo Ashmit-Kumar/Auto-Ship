@@ -67,7 +67,7 @@ func main() {
 	app.Post("/projects/submit",  middleware.IsAuthenticated ,api.HandleRepoSubmit)
 
 	// response for deployment status
-	app.Post("/api/deployment-status", DeploymentStatusHandler)
+	// app.Post("/api/deployment-status", DeploymentStatusHandler)
 
 	// Get user projects
 	app.Get("/projects", middleware.IsAuthenticated, api.GetUserProjects)

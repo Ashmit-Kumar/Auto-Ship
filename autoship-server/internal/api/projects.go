@@ -28,8 +28,8 @@ type RepoRequest struct {
 // HandleRepoSubmit handles the submission of a GitHub repository URL,
 // clones the repository, detects the project type, and handles the hosting.
 func HandleRepoSubmit(c *fiber.Ctx) error {
-	domain := os.Getenv("HOSTINGER_DOMAIN") // e.g. a.com
-	ec2IP := os.Getenv("EC2_PUBLIC_IP")
+    domain := os.Getenv("DOMAIN") // e.g. a.com (optional)
+	// ec2IP := os.Getenv("EC2_PUBLIC_IP")
 	var req RepoRequest
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid request")
@@ -84,7 +84,7 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
         // Run FullPipeline to detect environment, write Dockerfile, build & run
         containerPort, hostPort, containerName, err = services.FullPipeline(username, path, req.EnvContent, req.StartCommand)
  // returns hostPort
-		subdomain := generateSubdomain(repoName, domain)
+		subdomain := utils.GenerateSubdomain(repoName, domain)
 		// subdomain := fmt.Sprintf("%s.%s", repoName, domain)+
         if err != nil {
             _ = os.RemoveAll(path)
@@ -116,7 +116,7 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
 		// Step 3: Wait for response (polling with timeout)
 		response, err := utils.WaitForResponse("/tmp/deploy-responses.json", requestID, 60*time.Second)
 		if err != nil || response["status"] != "success" {
-			return fiber.NewError(fiber.StatusInternalServerError, "Deployment failed: "+response["error"])
+			return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("Deployment failed: %v", response["error"]))
 		}
 		hostedURL = response["url"].(string)
 
