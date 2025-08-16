@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/moby/moby/api/types"
-	"github.com/moby/moby/api/types/container"
-	"github.com/moby/moby/client"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/client"
 )
 
 // DeleteProject deletes a project's deployment.
