@@ -4,40 +4,36 @@ import (
 	"context"
 	"fmt"
 	"log"
-
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
+	"os/exec"
+	"time"
 )
 
-// DeleteProject deletes a project's deployment.
-// It stops and removes the Docker container associated with the project.
+// DeleteProject deletes a project's deployment by stopping and removing the Docker container.
 func DeleteProject(containerName string) error {
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		return fmt.Errorf("failed to create docker client: %w", err)
+	if containerName == "" {
+		return fmt.Errorf("container name required")
 	}
 
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 
-	// Stop the container
+	// Stop the container (best-effort)
 	log.Printf("Stopping container %s", containerName)
-	if err := cli.ContainerStop(ctx, containerName, container.StopOptions{}); err != nil {
-		// Log the error but continue, as we want to remove it even if stopping fails
-		log.Printf("failed to stop container %s: %v. Proceeding with removal.", containerName, err)
+	stopCmd := exec.CommandContext(ctx, "docker", "stop", containerName)
+	if out, err := stopCmd.CombinedOutput(); err != nil {
+		log.Printf("failed to stop container %s: %v, output: %s", containerName, err, string(out))
 	} else {
-		log.Printf("Successfully stopped container %s", containerName)
+		log.Printf("Successfully stopped container %s: %s", containerName, string(out))
 	}
 
-	// Remove the container
+	// Remove the container (force + remove volumes)
 	log.Printf("Removing container %s", containerName)
-	if err := cli.ContainerRemove(ctx, containerName, types.ContainerRemoveOptions{
-		RemoveVolumes: true,
-		Force:         true, // Force removal even if it's running
-	}); err != nil {
-		return fmt.Errorf("failed to remove container %s: %w", containerName, err)
+	rmCmd := exec.CommandContext(ctx, "docker", "rm", "-f", "-v", containerName)
+	if out, err := rmCmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to remove container %s: %v, output: %s", containerName, err, string(out))
+	} else {
+		log.Printf("Successfully removed container %s: %s", containerName, string(out))
 	}
 
-	log.Printf("Successfully removed container %s", containerName)
 	return nil
 }

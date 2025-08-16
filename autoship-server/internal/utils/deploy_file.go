@@ -43,7 +43,6 @@ func AppendJSONToFile(path string, newEntry map[string]interface{}) error {
 	return encoder.Encode(data)
 }
 
-
 // WaitForResponse waits for a specific ID to appear in the JSON response file
 func WaitForResponse(path string, id string, timeout time.Duration) (map[string]interface{}, error) {
 	start := time.Now()

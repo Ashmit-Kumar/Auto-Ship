@@ -3,39 +3,39 @@ package utils
 import (
 	"context"
 	"fmt"
+	"github.com/joho/godotenv"
 	"log"
 	"net"
 	"os"
-	"time"
-	"strings"
-	"strconv"
 	"os/exec"
-	"github.com/joho/godotenv"
+	"strconv"
+	"strings"
+	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var (
-    MongoURI        string
-    DatabaseName    string
-    CollectionName  string
-    SecurityGroupID string
-    Region          string
+	MongoURI        string
+	DatabaseName    string
+	CollectionName  string
+	SecurityGroupID string
+	Region          string
 )
 
 func init() {
-    _ = godotenv.Load(".env") // Loads .env file from current directory (ignore error if not present)
+	_ = godotenv.Load(".env") // Loads .env file from current directory (ignore error if not present)
 
-    MongoURI        = os.Getenv("MONGO_URI")
-    DatabaseName    = os.Getenv("MONGO_DB")
-    CollectionName  = os.Getenv("MONGO_DB_COLLECTION")
-    SecurityGroupID = os.Getenv("EC2_SECURITY_GROUP_ID")
-    Region          = os.Getenv("AWS_REGION")
+	MongoURI = os.Getenv("MONGO_URI")
+	DatabaseName = os.Getenv("MONGO_DB")
+	CollectionName = os.Getenv("MONGO_DB_COLLECTION")
+	SecurityGroupID = os.Getenv("EC2_SECURITY_GROUP_ID")
+	Region = os.Getenv("AWS_REGION")
 }
 
 // // GetOrReserveValidFreePort finds an unused port and opens it in the EC2 security group
@@ -81,9 +81,6 @@ func init() {
 // 	return portDoc.Port, nil
 // }
 
-
-
-
 func GetOrReserveValidFreePort(containerName string) (int, error) {
 	ctx := context.Background()
 
@@ -109,7 +106,7 @@ func GetOrReserveValidFreePort(containerName string) (int, error) {
 	} else if err != nil {
 		return 0, fmt.Errorf("failed to find latest port: %w", err)
 	}
-	startPort := portDoc.Port+1 // default fallback
+	startPort := portDoc.Port + 1 // default fallback
 	// if err == nil {
 	// 	startPort = portDoc.Port+1 // start from the next port
 	// }
@@ -118,7 +115,7 @@ func GetOrReserveValidFreePort(containerName string) (int, error) {
 	for port := startPort; port <= 65535; port++ {
 		if IsPortAvailable(port) {
 			// Try reserving in DB (ensure atomicity in multi-user environments)
-				_, err := coll.UpdateOne(ctx,
+			_, err := coll.UpdateOne(ctx,
 				bson.M{"port": port, "status": bson.M{"$ne": "used"}}, // <--- important
 				bson.M{
 					"$setOnInsert": bson.M{
@@ -143,9 +140,6 @@ func GetOrReserveValidFreePort(containerName string) (int, error) {
 
 	return 0, fmt.Errorf("no free ports found")
 }
-
-
-
 
 func IsPortAvailable(port int) bool {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
@@ -203,10 +197,10 @@ func tryDefaultPorts(containerID string) (int, error) {
 // detectPortWithNetstat uses netstat inside the container to find open ports.
 func detectPortWithNetstat(containerID string) (int, error) {
 	fmt.Println("Running netstat inside the container to detect open ports... ", containerID)
-	
+
 	// Sleep for few seconds to ensure the container is fully up
 	time.Sleep(5 * time.Second) // <-- wait for the container to be fully up
-	
+
 	// Execute netstat command inside the container
 	cmd := exec.Command("docker", "exec", containerID, "netstat", "-tuln")
 	if err := cmd.Run(); err != nil {
@@ -214,7 +208,7 @@ func detectPortWithNetstat(containerID string) (int, error) {
 	}
 	// output, err := cmd.Output()
 	// fmt.Println("Inspecting line:", line)
-	output, err := cmd.CombinedOutput() // <-- not just Output()
+	output, err := cmd.CombinedOutput()              // <-- not just Output()
 	fmt.Println("Netstat Output:\n", string(output)) // <-- helpful to print it
 	if err != nil {
 		return 0, fmt.Errorf("failed to exec netstat: %w", err)
@@ -255,17 +249,17 @@ func DetectExposedPort(containerID string) (int, error) {
 }
 
 func FindFreeHostPort() (int, error) {
-    listener, err := net.Listen("tcp", ":0")
-    if err != nil {
-        return 0, err
-    }
-    defer listener.Close()
-    addr := listener.Addr().String()
-    parts := strings.Split(addr, ":")
-    portStr := parts[len(parts)-1]
-    port, err := strconv.Atoi(portStr)
-    if err != nil {
-        return 0, err
-    }
-    return port, nil
+	listener, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return 0, err
+	}
+	defer listener.Close()
+	addr := listener.Addr().String()
+	parts := strings.Split(addr, ":")
+	portStr := parts[len(parts)-1]
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		return 0, err
+	}
+	return port, nil
 }

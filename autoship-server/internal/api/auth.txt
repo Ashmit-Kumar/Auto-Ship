@@ -23,12 +23,9 @@ func Signup(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid input"})
 	}
 
-	// Use GetCollection from internal/db/mongo.go
-	collection := db.GetCollection("users")
-
 	// Check if user already exists
 	var existingUser models.User
-	err := collection.FindOne(context.TODO(), bson.M{"email": user.Email}).Decode(&existingUser)
+	err := db.UserCollection.FindOne(context.TODO(), bson.M{"email": user.Email}).Decode(&existingUser)
 	if err == nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "User already exists"})
 	}
@@ -45,13 +42,10 @@ func Signup(c *fiber.Ctx) error {
 	user.UpdatedAt = time.Now()
 
 	// Insert new user into MongoDB
-	insertResult, err := collection.InsertOne(context.TODO(), user)
+	_, err = db.UserCollection.InsertOne(context.TODO(), user)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "Error creating user"})
 	}
-
-	// Set ID from InsertedID
-	user.ID = insertResult.InsertedID.(primitive.ObjectID)
 
 	// Generate JWT token
 	token, err := utils.GenerateJWT(user.ID.Hex(), user.Email)
@@ -74,9 +68,8 @@ func Login(c *fiber.Ctx) error {
 	}
 
 	var user models.User
-	collection := db.GetCollection("users")
 	// Look up user by email
-	err := collection.FindOne(context.TODO(), bson.M{"email": loginDetails.Email}).Decode(&user)
+	err := db.UserCollection.FindOne(context.TODO(), bson.M{"email": loginDetails.Email}).Decode(&user)
 	if err != nil {
 		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "User not found"})
 	}
@@ -128,8 +121,7 @@ func GitHubCallback(c *fiber.Ctx) error {
 
 	// Check if user exists
 	var existingUser models.User
-	collection := db.GetCollection("users")
-	err = collection.FindOne(context.TODO(), bson.M{"email": email}).Decode(&existingUser)
+	err = db.UserCollection.FindOne(context.TODO(), bson.M{"email": email}).Decode(&existingUser)
 	if err != nil {
 		// Create new user
 		newUser := models.User{
@@ -138,7 +130,7 @@ func GitHubCallback(c *fiber.Ctx) error {
 			UpdatedAt: time.Now(),
 			Password:  "", // GitHub login only
 		}
-		insertResult, err := collection.InsertOne(context.TODO(), newUser)
+		insertResult, err := db.UserCollection.InsertOne(context.TODO(), newUser)
 		if err != nil {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to create user"})
 		}

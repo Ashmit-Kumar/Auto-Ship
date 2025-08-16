@@ -5,18 +5,20 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/joho/godotenv"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
-	"log"
-	"github.com/joho/godotenv"
 )
 
 // GitHub OAuth endpoints and credentials
 // var (
-// 	githubClientID     = os.Getenv("GITHUB_CLIENT_ID")
-// 	githubClientSecret = os.Getenv("GITHUB_CLIENT_SECRET")
-// 	githubRedirectURI  = os.Getenv("GITHUB_REDIRECT_URI") // example: http://localhost:5000/github/callback
+//
+//	githubClientID     = os.Getenv("GITHUB_CLIENT_ID")
+//	githubClientSecret = os.Getenv("GITHUB_CLIENT_SECRET")
+//	githubRedirectURI  = os.Getenv("GITHUB_REDIRECT_URI") // example: http://localhost:5000/github/callback
+//
 // )
 var (
 	githubClientID     = mustGetEnv("GITHUB_CLIENT_ID")
@@ -51,7 +53,7 @@ func GetGitHubAuthURL() string {
 func ExchangeCodeForAccessToken(code string) (string, error) {
 	url := "https://github.com/login/oauth/access_token"
 	fmt.Println("Exchanging code for access token") // Debugging
-	fmt.Println("Code:", code) // Debugging
+	fmt.Println("Code:", code)                      // Debugging
 	// log.Println("GITHUB_CLIENT_ID:", githubClientID)
 	// log.Println("GITHUB_CLIENT_SECRET:", githubClientSecret)
 	// log.Println("GITHUB_REDIRECT_URI:", githubRedirectURI)
