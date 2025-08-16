@@ -35,6 +35,6 @@ func DeploymentStatusHandler(c *fiber.Ctx) error {
 }
 
 // func UpdateDeploymentStatus(id, status, message, subdomain string) error {
-	// Update the deployment status in the database
-	// return nil
+// Update the deployment status in the database
+// return nil
 //}
