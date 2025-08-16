@@ -2,56 +2,51 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"log"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var Client *mongo.Client
-var UserCollection *mongo.Collection
+var client *mongo.Client
 var mongoURI string
 
-// SetMongoURI allows you to set the MongoDB URI
+// SetMongoURI sets the MongoDB connection string.
 func SetMongoURI(uri string) {
 	mongoURI = uri
 }
 
-// Connect to MongoDB
+// Connect establishes a connection to MongoDB.
 func Connect() {
-	if mongoURI == "" {
-		log.Fatal("MONGO_URI is not set")
-	}
+	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
+	opts := options.Client().ApplyURI(mongoURI).SetServerAPIOptions(serverAPI)
 
-	// Set client options
-	clientOptions := options.Client().ApplyURI(mongoURI)
-
-	// Connect to MongoDB
 	var err error
-	Client, err = mongo.Connect(context.TODO(), clientOptions)
+	client, err = mongo.Connect(context.TODO(), opts)
 	if err != nil {
-		log.Fatal("Error connecting to MongoDB: ", err)
+		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
 
-	// Ping the database
-	err = Client.Ping(context.TODO(), nil)
-	if err != nil {
-		log.Fatal("Error pinging MongoDB: ", err)
+	// Ping the database to verify the connection.
+	if err := client.Database("admin").RunCommand(context.TODO(), bson.D{{Key: "ping", Value: 1}}).Err(); err != nil {
+		log.Fatalf("Failed to ping MongoDB: %v", err)
 	}
-
-	// Initialize collections
-	UserCollection = Client.Database("autoship").Collection("users")
-
-	log.Println("Connected to MongoDB successfully!")
+	fmt.Println("Successfully connected to MongoDB!")
 }
 
-// Disconnect from MongoDB
+// Disconnect closes the MongoDB connection.
 func Disconnect() {
-	err := Client.Disconnect(context.TODO())
-	if err != nil {
-		log.Fatal("Error disconnecting from MongoDB: ", err)
+	if client != nil {
+		if err := client.Disconnect(context.TODO()); err != nil {
+			log.Fatalf("Failed to disconnect from MongoDB: %v", err)
+		}
+		fmt.Println("Connection to MongoDB closed.")
 	}
 }
-func GetClient() *mongo.Client {
-	return Client
+
+// GetCollection returns a collection from the database.
+func GetCollection(name string) *mongo.Collection {
+	return client.Database("autoship").Collection(name)
 }
