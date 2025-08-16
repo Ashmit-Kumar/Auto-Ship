@@ -8,11 +8,11 @@ import (
 	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/api"
 	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/db"
 	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/middleware"
+	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/services"
 	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/utils" // Import utils package for JWT
 	"github.com/gofiber/fiber/v2"
-	"github.com/joho/godotenv"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/services"
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -41,7 +41,6 @@ func main() {
 		log.Fatal("MONGO_URI is not set in .env file")
 	}
 
-	
 	// Set MongoDB URI
 	db.SetMongoURI(mongoURI)
 
@@ -57,14 +56,14 @@ func main() {
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.SendString("OK")
 	})
-	
+
 	// Routes
 	app.Post("/signup", api.Signup)
 	app.Post("/login", api.Login)
 	app.Get("/auth/github", api.GitHubLogin)
 	// app.Get("/auth/github/callback", api.GitHubCallback)
 	app.Get("/github/callback", api.GitHubCallback)
-	app.Post("/projects/submit",  middleware.IsAuthenticated ,api.HandleRepoSubmit)
+	app.Post("/projects/submit", middleware.IsAuthenticated, api.HandleRepoSubmit)
 
 	// response for deployment status
 	// app.Post("/api/deployment-status", DeploymentStatusHandler)
@@ -79,9 +78,9 @@ func main() {
 
 	// Serve everything under static as public files
 	app.Static("/static", "./static", fiber.Static{
-		Browse:     true,
-		Index:      "index.html",
-		Compress:   true,
+		Browse:   true,
+		Index:    "index.html",
+		Compress: true,
 	})
 
 	// to serve static files from the static directory like scripts, styles, etc.
