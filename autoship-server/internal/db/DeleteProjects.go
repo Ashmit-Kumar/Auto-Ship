@@ -1,11 +1,10 @@
 package db
 
 import (
-    "context"
-    "time"
-    "go.mongodb.org/mongo-driver/bson"
+	"context"
+	"go.mongodb.org/mongo-driver/bson"
+	"time"
 )
-
 
 func DeleteProjectByContainerName(containerName string) error {
 	collection := GetCollection("projects")
