@@ -1,13 +1,13 @@
 [
   {
     "id": "req123",
-    "subdomain": "test.example.site",
+    "subdomain": "test.autoship.site",
     "project_type": "static",
     "s3_url": "https://s3.amazonaws.com/bucket/test"
   },
   {
     "id": "req456",
-    "subdomain": "dynamic.example.com",
+    "subdomain": "dynamic.autoship.site",
     "project_type": "dynamic",
     "port": 3000
   }
