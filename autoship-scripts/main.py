@@ -14,7 +14,14 @@ from dns_utils import add_dns_record
 from response_utils import write_response
 
 # Constants
-DEPLOY_FILE = "deploy-requests.json"
+# Path on host shared with server container
+DEPLOY_FILE = "/var/lib/autoship/deploy/deploy-requests.json"
+
+# Ensure deploy file exists (an empty list) so reader won't fail
+Path(os.path.dirname(DEPLOY_FILE)).mkdir(parents=True, exist_ok=True)
+if not Path(DEPLOY_FILE).exists():
+    with open(DEPLOY_FILE, "w") as f:
+        json.dump([], f)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -35,20 +42,29 @@ def hash_file_content(path):
 def handle_request(req):
     print("Welcome to the host handler! inside handle_request that is inside main.py")
     try:
-        req_id = req.get("id")
+        req_id = req.get("id") or req.get("request_id")
         subdomain = req.get("subdomain")
-        project_type = req.get("project_type")
+        # accept either camelCase or snake_case coming from server
+        project_type = req.get("projectType") or req.get("project_type")
         if not req_id or not subdomain or not project_type:
             raise ValueError("Missing required fields")
 
         if project_type == "static":
-            s3_url = req.get("s3_url")
+            s3_url = req.get("s3_url") or req.get("s3Url") or req.get("url")
             if not s3_url:
                 raise ValueError("Missing s3_url for static project")
             write_nginx_conf_static(subdomain, s3_url)
 
         elif project_type == "dynamic":
+            # port may be provided directly or via `target` like "localhost:1234"
             port = req.get("port")
+            if not port:
+                target = req.get("target")
+                if isinstance(target, str) and ":" in target:
+                    try:
+                        port = int(target.split(":")[-1])
+                    except Exception:
+                        port = None
             if not isinstance(port, int):
                 raise ValueError("Invalid or missing port for dynamic project")
             write_nginx_conf_dynamic(subdomain, port)
@@ -61,13 +77,13 @@ def handle_request(req):
             raise RuntimeError("DNS record creation failed")
 
         if not generate_ssl(subdomain):
-            raise RuntimeError("SSL certificate generation failed")
-
+            logging.error(f"SSL certificate generation failed for {subdomain}")
         if not reload_nginx():
             raise RuntimeError("NGINX reload failed")
 
+        # respond using "id" because server waits on this key
         write_response({
-            "request_id": req_id,
+            "id": req_id,
             "subdomain": subdomain,
             "status": "success",
             "message": "Deployed",
@@ -77,7 +93,7 @@ def handle_request(req):
     except Exception as e:
         logging.error(f"[{req.get('id')}] Failed: {e}")
         write_response({
-            "request_id": req.get("id"),
+            "id": req.get("id"),
             "subdomain": req.get("subdomain"),
             "status": "error",
             "message": str(e)
