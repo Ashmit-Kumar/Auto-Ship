@@ -3,7 +3,7 @@
 This document explains how to install and run the host worker scripts under systemd so the worker starts on boot and restarts on failure.
 
 Prerequisites
-- The worker files copied to `/opt/autoship` (scripts like `host_handler.py`, `main.py`, `dns_utils.py`, etc.).
+- The worker files copied to `/opt/autoship` (scripts like `main.py`, `dns_utils.py`, etc.).
 - An environment file at `/opt/autoship/.env` containing required secrets (Cloudflare token, zone id, EC2 IP, nginx paths).
 - Python 3 installed on the host and any required packages available system-wide or in `/opt/autoship/venv`.
 
