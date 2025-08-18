@@ -12,3 +12,12 @@
     "port": 3000
   }
 ]
+
+[
+  {
+    "id": "req456",
+    "subdomain": "dynamic.autoship.site",
+    "project_type": "dynamic",
+    "port": 3000
+  }
+]
