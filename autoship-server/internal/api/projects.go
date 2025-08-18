@@ -108,12 +108,12 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
 		}
 
 		// Step 2: Append to /tmp/deploy-requests.json
-		if err := utils.AppendJSONToFile("/tmp/deploy-requests.json", deployRequest); err != nil {
+		if err := utils.AppendJSONToFile("/var/lib/autoship/deploy/deploy-requests.json", deployRequest); err != nil {
 			return fiber.NewError(fiber.StatusInternalServerError, "Failed to queue deployment: "+err.Error())
 		}
 
 		// Step 3: Wait for response (polling with timeout)
-		response, err := utils.WaitForResponse("/tmp/deploy-responses.json", requestID, 60*time.Second)
+		response, err := utils.WaitForResponse("/var/lib/autoship/deploy/deploy-responses.json", requestID, 60*time.Second)
 		if err != nil || response["status"] != "success" {
 			return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("Deployment failed: %v", response["error"]))
 		}
