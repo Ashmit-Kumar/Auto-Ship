@@ -25,8 +25,3 @@ Response timeline
 
 ## Safe Practices
 - Avoid sending sensitive secrets when reporting issues. If secrets are required to reproduce, share them via secure channels or use redacted examples and instructions to recreate the scenario.
-
-## PGP (Optional)
-- If you prefer to encrypt your report, please request our public PGP key via the security email.
-
-Thank you for helping keep Auto-Ship safe.
