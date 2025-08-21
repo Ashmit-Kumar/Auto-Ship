@@ -1,0 +1,13 @@
+# Ignore the .env file
+.env
+
+
+# Ignore test files and directories
+test/
+
+# Ignore other files you don't need in the image
+*.md
+*.git
+
+# build 
+server

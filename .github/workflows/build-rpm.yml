@@ -1,0 +1,81 @@
+name: Build RPM and publish repo
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  VERSION: ${{github.ref_name}}
+  TARGET_REPO: ${{ secrets.TARGET_REPO }} # e.g. ashmit-kumar/autoship-deploy
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-publish:
+    # use an Amazon Linux 2 container so the produced RPM is compatible with Amazon Linux AMI
+    runs-on: ubuntu-latest
+    container:
+      image: amazonlinux:2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          # Amazon Linux uses yum; install rpm build tools and createrepo
+          yum -y install yum-utils rpm-build redhat-rpm-config createrepo git tar gzip
+          yum -y clean all
+
+      - name: Prepare rpmbuild dirs
+        run: |
+          mkdir -p rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+
+      - name: Create source tarball
+        run: |
+          VERSION=${{ env.VERSION }}
+          tar czf autoship-deploy-${VERSION}.tar.gz autoship-scripts/
+          mv autoship-deploy-${VERSION}.tar.gz rpmbuild/SOURCES/
+
+      - name: Copy spec into SPECS
+        run: |
+          cp autoship-scripts/autoship-deploy.spec rpmbuild/SPECS/
+
+      - name: Build RPM
+        run: |
+          # use topdir pointing at repo rpmbuild dir
+          rpmbuild -ba --define "_topdir $PWD/rpmbuild" rpmbuild/SPECS/autoship-deploy.spec
+
+      - name: Prepare repo directory
+        run: |
+          mkdir -p repo
+          cp rpmbuild/RPMS/noarch/*.rpm repo/ || true
+          ls -l repo || true
+
+      - name: Create repodata
+        run: |
+          createrepo repo/
+
+      - name: Push repo to gh-pages branch of target repo
+        run: |
+          # Publish the repo/ directory to this repository's gh-pages branch using the builtin GITHUB_TOKEN
+          REPO=${{ github.repository }}
+          TOKEN=${{ secrets.GITHUB_TOKEN }}
+
+          git config --global user.email "actions@github.com"
+          git config --global user.name "github-actions"
+          TMPDIR=$(mktemp -d)
+          cd $TMPDIR
+          git init
+          git remote add origin https://x-access-token:${TOKEN}@github.com/${REPO}.git
+          git fetch origin || true
+          git checkout -B gh-pages
+          cp -r $GITHUB_WORKSPACE/repo/* .
+          git add .
+          git commit -m "Publish repo from workflow: $GITHUB_SHA" || true
+          git push origin gh-pages --force
+
+      - name: Done
+        run: echo "RPM build and publish finished"

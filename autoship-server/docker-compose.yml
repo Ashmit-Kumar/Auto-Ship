@@ -1,0 +1,8 @@
+services:
+  go-backend:
+    image: ashmit1020/auto-ship:v1.0          # Image must already be built locally or on a registry
+    ports:
+      - "${PORT}:${PORT}"     # PORT from .env
+    env_file:
+      - .env
+    restart: unless-stopped
