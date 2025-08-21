@@ -35,9 +35,13 @@ jobs:
 
       - name: Create source tarball
         run: |
-          VERSION=${{ env.VERSION }}
+          RAW_VERSION='${{ github.ref_name }}'
+          # strip leading "v" if present (so v1.0.0 -> 1.0.0)
+          VERSION="${RAW_VERSION#v}"
+          echo "RAW_VERSION=$RAW_VERSION -> VERSION=$VERSION"
           tar czf autoship-deploy-${VERSION}.tar.gz autoship-scripts/
           mv autoship-deploy-${VERSION}.tar.gz rpmbuild/SOURCES/
+          ls -l rpmbuild/SOURCES/
 
       - name: Copy spec into SPECS
         run: |
@@ -47,6 +51,17 @@ jobs:
         run: |
           # use topdir pointing at repo rpmbuild dir
           rpmbuild -ba --define "_topdir $PWD/rpmbuild" rpmbuild/SPECS/autoship-deploy.spec
+
+      - name: Verify RPM produced
+        run: |
+          shopt -s nullglob || true
+          RPM_COUNT=$(ls -1 rpmbuild/RPMS/*/*.rpm 2>/dev/null | wc -l || true)
+          echo "RPM_COUNT=$RPM_COUNT"
+          if [ "${RPM_COUNT:-0}" -eq 0 ]; then
+            echo "ERROR: no RPM produced. Check rpmbuild logs above."
+            ls -la rpmbuild || true
+            exit 1
+          fi
 
       - name: Prepare repo directory
         run: |
