@@ -81,6 +81,9 @@ if [ -x /usr/bin/systemctl ]; then
 fi
 
 %changelog
+* Thu Aug 21 2025 Ashmit-Kumar - 1.0.1-1
+- Release 1.0.1: rebuild RPM, publish repo; fix duplicate %files entry for .env.example
+
 * Thu Aug 21 2025 Ashmit-Kumar - 1.0.0-1
 - Bundle python wheels in source tarball; create venv at %post and install from wheels
 - Require python3 and python3-pip; avoid BUILDROOT venv contamination
