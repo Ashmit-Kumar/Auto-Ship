@@ -39,7 +39,7 @@ install -m 644 .env.example %{buildroot}/opt/autoship/.env.example
 %files
 %defattr(-,root,root,-)
 /opt/autoship
-# /opt/autoship/wheels
+/opt/autoship/wheels
 /etc/systemd/system/autoship.service
 %config(noreplace) /opt/autoship/.env.example
 %doc Deploy-package.md PKG_AND_PUBLISH.md
