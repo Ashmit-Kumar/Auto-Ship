@@ -3,7 +3,7 @@
 Thank you for taking the time to responsibly disclose security issues in Auto-Ship.
 
 ## Reporting a Vulnerability
-If you discover a potential security vulnerability, please do not open a public issue. Instead, email the maintainers privately at: security@autoship.example (replace with the project owner's real address).
+If you discover a potential security vulnerability, please do not open a public issue. Instead, email the maintainers privately at: ashmitkumar1020@gmail.com
 
 When reporting, include:
 - A clear description of the issue and impact.
@@ -25,8 +25,3 @@ Response timeline
 
 ## Safe Practices
 - Avoid sending sensitive secrets when reporting issues. If secrets are required to reproduce, share them via secure channels or use redacted examples and instructions to recreate the scenario.
-
-## PGP (Optional)
-- If you prefer to encrypt your report, please request our public PGP key via the security email.
-
-Thank you for helping keep Auto-Ship safe.
