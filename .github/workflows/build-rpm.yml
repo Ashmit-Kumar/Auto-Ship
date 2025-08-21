@@ -25,19 +25,35 @@ jobs:
 
       - name: Install dependencies
         run: |
-          # Amazon Linux uses yum; install rpm build tools and createrepo
-          yum -y install yum-utils rpm-build redhat-rpm-config createrepo git tar gzip
+          # Amazon Linux uses yum; install rpm build tools, createrepo and python3/pip
+          yum -y install yum-utils rpm-build redhat-rpm-config createrepo git tar gzip python3 python3-pip
           yum -y clean all
 
       - name: Prepare rpmbuild dirs
         run: |
           mkdir -p rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
 
-      - name: Create source tarball
+      - name: Create source tarball (with vendored wheels)
         run: |
-          VERSION=${{ env.VERSION }}
-          tar czf autoship-deploy-${VERSION}.tar.gz autoship-scripts/
+          RAW_VERSION='${{ github.ref_name }}'
+          # strip leading v if present
+          VERSION="${RAW_VERSION#v}"
+          echo "RAW_VERSION=$RAW_VERSION -> VERSION=$VERSION"
+
+          # stage copy and vendor wheels into staged tree
+          STAGEDIR=$(mktemp -d)
+          cp -a autoship-scripts "${STAGEDIR}/autoship-scripts"
+
+          mkdir -p "${STAGEDIR}/autoship-scripts/wheels"
+          if [ -f autoship-scripts/requirements.txt ]; then
+            python3 -m pip download -r autoship-scripts/requirements.txt -d "${STAGEDIR}/autoship-scripts/wheels"
+          fi
+
+          # create the source tarball containing scripts + wheels
+          tar czf autoship-deploy-${VERSION}.tar.gz -C "${STAGEDIR}" autoship-scripts
           mv autoship-deploy-${VERSION}.tar.gz rpmbuild/SOURCES/
+          ls -l rpmbuild/SOURCES/
+          rm -rf "${STAGEDIR}"
 
       - name: Copy spec into SPECS
         run: |
@@ -48,10 +64,22 @@ jobs:
           # use topdir pointing at repo rpmbuild dir
           rpmbuild -ba --define "_topdir $PWD/rpmbuild" rpmbuild/SPECS/autoship-deploy.spec
 
+      - name: Verify RPM produced
+        run: |
+          set -e
+          RPM_COUNT=$(ls -1 rpmbuild/RPMS/*/*.rpm 2>/dev/null | wc -l || true)
+          echo "RPM_COUNT=$RPM_COUNT"
+          if [ "${RPM_COUNT:-0}" -eq 0 ]; then
+            echo "ERROR: no RPM produced. Check rpmbuild logs above."
+            ls -la rpmbuild || true
+            exit 1
+          fi
+
       - name: Prepare repo directory
         run: |
           mkdir -p repo
-          cp rpmbuild/RPMS/noarch/*.rpm repo/ || true
+          # copy any built RPM (any arch)
+          cp -v rpmbuild/RPMS/*/*.rpm repo/ || true
           ls -l repo || true
 
       - name: Create repodata
