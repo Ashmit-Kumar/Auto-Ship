@@ -1,5 +1,5 @@
 Name:           autoship-deploy
-Version:        1.0.0
+Version:        1.0.1
 Release:        1%{?dist}
 Summary:        AutoShip host worker and helper scripts (systemd service)
 License:        MIT
@@ -41,7 +41,7 @@ install -m 644 .env.example %{buildroot}/opt/autoship/.env.example
 /opt/autoship
 # /opt/autoship/wheels
 /etc/systemd/system/autoship.service
-%config(noreplace) /opt/autoship/.env.example
+# %config(noreplace) /opt/autoship/.env.example
 %doc Deploy-package.md PKG_AND_PUBLISH.md
 
 %post
