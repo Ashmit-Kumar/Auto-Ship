@@ -57,3 +57,5 @@ Thumbs.db
 *.tmp
 *.bak
 tmp/
+rpmbuild/
+repo/
