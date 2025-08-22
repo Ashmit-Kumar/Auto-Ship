@@ -62,7 +62,13 @@ jobs:
       - name: Build RPM
         run: |
           # use topdir pointing at repo rpmbuild dir
-          rpmbuild -ba --define "_topdir $PWD/rpmbuild" rpmbuild/SPECS/autoship-deploy.spec
+          # VERSION variable was set earlier in this job (strip leading v)
+          # set a reproducible Release using the run number
+          rpmbuild -ba \
+            --define "_topdir $PWD/rpmbuild" \
+            --define "version ${VERSION}" \
+            --define "release ${GITHUB_RUN_NUMBER}%{?dist}" \
+            rpmbuild/SPECS/autoship-deploy.spec
 
       - name: Verify RPM produced
         run: |
