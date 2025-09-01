@@ -111,3 +111,8 @@ If you want me to:
 - Recreate wheels for a specific target Python ABI — tell me the host's `python3 --version` and I will provide the exact `pip download` flags.
 - Create a PR to merge these spec/workflow changes into `main`.
 
+```
+Create annotated tag: git tag -a v1.0.2 -m "Release v1.0.2"
+
+Push that tag to the remote: git push origin v1.0.2
+```

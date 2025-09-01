@@ -103,7 +103,7 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
 			"id":          requestID,
 			"subdomain":   subdomain,
 			"projectType": projectType,
-			"target":      fmt.Sprintf("localhost:%d", hostPort),
+			"port":         hostPort,
 			"status":      "pending",
 		}
 
@@ -118,7 +118,6 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
 			return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("Deployment failed: %v", response["error"]))
 		}
 		hostedURL = response["url"].(string)
-
 	}
 
 	// encrypt the hosted URL for security
