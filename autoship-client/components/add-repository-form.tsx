@@ -15,7 +15,16 @@ const formSchema = z.object({
   repoUrl: z
     .string()
     .url({ message: "Please enter a valid URL" })
-    .refine((url) => url.includes("github.com"), "Please enter a valid GitHub repository URL"),
+    .refine((url) => {
+      try {
+        const parsed = new URL(url)
+        const host = parsed.hostname.toLowerCase()
+        const allowedHosts = ["github.com", "www.github.com"]
+        return allowedHosts.includes(host)
+      } catch {
+        return false
+      }
+    }, "Please enter a valid GitHub repository URL"),
 })
 
 export function AddRepositoryForm() {
