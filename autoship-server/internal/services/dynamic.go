@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	// "io/ioutil"
+	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/cloud"
 	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/utils"
 	"log"
 	"os"
@@ -222,10 +223,10 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, error
 		return 0, 0, fmt.Errorf("failed to find free host port: %w", err)
 	}
 
-	fmt.Println("Using host port through AuthorizeEC2Port: ", hostPort)
-	if err := utils.AuthorizeEC2Port(hostPort); err != nil {
+	fmt.Println("Authorizing host port via cloud firewall: ", hostPort)
+	if err := cloud.Get().AuthorizePort(hostPort); err != nil {
 		_ = exec.Command("docker", "rm", "-f", tmpContainer).Run()
-		return 0, 0, fmt.Errorf("EC2 SG error: %w", err)
+		return 0, 0, fmt.Errorf("firewall authorize error: %w", err)
 	}
 
 	// Optional: Commit container state (e.g., installed files)
