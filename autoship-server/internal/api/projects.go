@@ -3,6 +3,7 @@ package api
 
 import (
 	"fmt"
+	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/cloud"
 	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/db"
 	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/models"
 	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/services"
@@ -68,10 +69,10 @@ func HandleRepoSubmit(c *fiber.Ctx) error {
 	var hostedURL string
 	var containerPort, hostPort int
 	var containerName string
-	// If the project is static, upload to S3 and generate a hosted URL
+	// If the project is static, upload to S3/Blob and generate a hosted URL
 	if projectType == "static" {
 		keyPrefix := fmt.Sprintf("%s/%s", username, repoName)
-		url, err := services.UploadStaticSite(path, keyPrefix)
+		url, err := cloud.Get().UploadStaticSite(path, keyPrefix)
 		if err != nil {
 			return fiber.NewError(fiber.StatusInternalServerError, "Failed to upload to S3: "+err.Error())
 		}

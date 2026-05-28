@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"fmt"
+	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/cloud"
 	"github.com/joho/godotenv"
 	"log"
 	"net"
@@ -12,30 +13,23 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ec2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var (
-	MongoURI        string
-	DatabaseName    string
-	CollectionName  string
-	SecurityGroupID string
-	Region          string
+	MongoURI       string
+	DatabaseName   string
+	CollectionName string
 )
 
 func init() {
 	_ = godotenv.Load(".env") // Loads .env file from current directory (ignore error if not present)
 
 	MongoURI = os.Getenv("MONGO_URI")
-	DatabaseName = os.Getenv("MONGO_DB")
+	DatabaseName = os.Getenv("MONGO_DB_NAME")
 	CollectionName = os.Getenv("MONGO_DB_COLLECTION")
-	SecurityGroupID = os.Getenv("EC2_SECURITY_GROUP_ID")
-	Region = os.Getenv("AWS_REGION")
 }
 
 // // GetOrReserveValidFreePort finds an unused port and opens it in the EC2 security group
@@ -128,9 +122,9 @@ func GetOrReserveValidFreePort(containerName string) (int, error) {
 				options.Update().SetUpsert(true),
 			)
 			if err == nil {
-				// Open in EC2 SG
-				if err := AuthorizeEC2Port(port); err != nil {
-					log.Printf("Failed to open port %d in SG: %v", port, err)
+				// Open the port in the active cloud provider's firewall.
+				if err := cloud.Get().AuthorizePort(port); err != nil {
+					log.Printf("Failed to open port %d in firewall: %v", port, err)
 					continue
 				}
 				return port, nil
@@ -148,37 +142,6 @@ func IsPortAvailable(port int) bool {
 	}
 	_ = listener.Close()
 	return true
-}
-
-func AuthorizeEC2Port(port int) error {
-	sess := session.Must(session.NewSession(&aws.Config{
-		Region: aws.String(Region),
-	}))
-
-	svc := ec2.New(sess)
-
-	_, err := svc.AuthorizeSecurityGroupIngress(&ec2.AuthorizeSecurityGroupIngressInput{
-		GroupId: aws.String(SecurityGroupID),
-		IpPermissions: []*ec2.IpPermission{
-			{
-				IpProtocol: aws.String("tcp"),
-				FromPort:   aws.Int64(int64(port)),
-				ToPort:     aws.Int64(int64(port)),
-				IpRanges: []*ec2.IpRange{
-					{
-						CidrIp:      aws.String("0.0.0.0/0"),
-						Description: aws.String("Auto-opened for container hosting"),
-					},
-				},
-			},
-		},
-	})
-
-	if err != nil && !strings.Contains(err.Error(), "InvalidPermission.Duplicate") {
-		return err
-	}
-
-	return nil
 }
 
 // tryDefaultPorts checks common default ports like 3000, 5000, 8080 inside the container.
