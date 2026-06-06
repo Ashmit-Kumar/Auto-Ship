@@ -40,6 +40,7 @@ func registerAuthRoutes(app *fiber.App) {
 func registerProjectRoutes(app *fiber.App) {
 	app.Post("/projects/submit", middleware.IsAuthenticated, HandleRepoSubmit)
 	app.Get("/projects", middleware.IsAuthenticated, GetUserProjects)
+	app.Get("/projects/:id", middleware.IsAuthenticated, GetProjectStatus)
 	app.Delete("/projects/:containerName", middleware.IsAuthenticated, DeleteDeployment)
 }
 
