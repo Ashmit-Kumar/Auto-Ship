@@ -13,6 +13,11 @@ import (
 func CloneRepository(repoURL, username, repoName string) (string, error) {
 	path := fmt.Sprintf("static/%s/%s", username, repoName)
 
+	// FUTURE: concurrent same-repo race — path has no deploy id, so two
+	// deploys of the same repo by the same user share this dir. The second
+	// sees it exists and reuses the first's in-flight clone; when the first
+	// finishes, its defer os.RemoveAll yanks the second's working tree
+	// mid-build. Thread a deployment id / timestamp suffix through.
 	if _, err := os.Stat(path); err == nil {
 		return path, nil // already cloned
 	}

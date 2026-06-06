@@ -17,6 +17,11 @@ import (
 )
 
 // Signup handler
+//
+// FUTURE: no input validation — empty email or empty password parses
+// successfully and creates an unusable user (bcrypt happily hashes "").
+// Add explicit non-empty + email-format checks before the existing-user
+// lookup.
 func Signup(c *fiber.Ctx) error {
 	var user models.User
 	if err := c.BodyParser(&user); err != nil {
@@ -123,6 +128,9 @@ func GitHubCallback(c *fiber.Ctx) error {
 	// Extract email (or fallback)
 	email, ok := userInfo["email"].(string)
 	if !ok || email == "" {
+		// FUTURE: panics if userInfo["login"] is nil or non-string. Fiber
+		// catches it as 500 but the safe form is:
+		//   if login, ok := userInfo["login"].(string); ok { email = login + "@github.com" }
 		email = userInfo["login"].(string) + "@github.com"
 	}
 
@@ -162,6 +170,8 @@ func GitHubCallback(c *fiber.Ctx) error {
 	// })
 
 	// Redirect to frontend dashboard with token
+	// FUTURE: hardcoded — make this a FRONTEND_URL env var once the server
+	// is deployed somewhere with a non-localhost frontend host.
 	redirectURL := "http://localhost:3000/dashboard?token=" + token
 	return c.Redirect(redirectURL, fiber.StatusFound)
 }

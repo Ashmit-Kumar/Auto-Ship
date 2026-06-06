@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/joho/godotenv"
 )
 
 var jwtKey []byte
@@ -20,13 +19,10 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-// LoadEnv loads environment variables from the .env file
+// LoadEnv reads JWT-related environment variables into package state.
+// Assumes .env has already been loaded by config.Load — this function
+// does NOT load .env itself (centralized loading lives in config).
 func LoadEnv() error {
-	if err := godotenv.Load(); err != nil {
-		return fmt.Errorf("error loading .env file: %w", err)
-	}
-
-	// Set JWT secret key and expiration time from environment variables
 	jwtKey = []byte(os.Getenv("JWT_SECRET"))
 
 	expiration, err := time.ParseDuration(os.Getenv("JWT_EXPIRATION"))
