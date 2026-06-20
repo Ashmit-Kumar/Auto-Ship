@@ -1,8 +1,18 @@
 package models
 
 import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
+
+// Deployment status values. A project moves pending -> deploying ->
+// (succeeded | failed). Stored in Project.Status.
+const (
+	StatusPending   = "pending"
+	StatusDeploying = "deploying"
+	StatusSucceeded = "succeeded"
+	StatusFailed    = "failed"
 )
 
 type Project struct {
@@ -11,6 +21,8 @@ type Project struct {
 	RepoURL       string             `bson:"repo_url" json:"repo_url"`
 	RepoName      string             `bson:"repo_name" json:"repo_name"`
 	ProjectType   string             `bson:"project_type" json:"project_type"`
+	Status        string             `bson:"status" json:"status"`
+	DeployError   string             `bson:"deploy_error,omitempty" json:"deploy_error,omitempty"`
 	HostedURL     string             `bson:"hosted_url" json:"hosted_url"`
 	StartCommand  string             `bson:"start_command" json:"start_command"`
 	ContainerPort int                `bson:"container_port" json:"container_port"`

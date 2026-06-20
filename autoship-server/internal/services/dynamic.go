@@ -90,6 +90,10 @@ func GenerateDockerfile(env Environment, repoPath, startCommand string) error {
 	case EnvGo:
 		baseImage = "golang:1.20"
 		netToolsInstall = "RUN apt update && apt install -y net-tools"
+		// FUTURE: this builds `app` then CMDs whatever startCommand the user
+		// gave (often `go run main.go`), which doesn't match. Either set
+		// CMD ["./app"] for Go projects and ignore startCommand, or drop the
+		// build step and let `go run` handle it.
 		installCmd = "RUN go build -o app ."
 	default:
 		return fmt.Errorf("unsupported environment: %s", env)
@@ -223,6 +227,10 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, error
 		return 0, 0, fmt.Errorf("failed to find free host port: %w", err)
 	}
 
+	// FUTURE: redundant — GetOrReserveValidFreePort already authorized this
+	// port on the cloud firewall internally. On Azure this adds ~10-30s
+	// for the NSG poll. Safe to delete once we're confident nothing else
+	// depends on AuthorizePort being called at this exact point.
 	fmt.Println("Authorizing host port via cloud firewall: ", hostPort)
 	if err := cloud.Get().AuthorizePort(hostPort); err != nil {
 		_ = exec.Command("docker", "rm", "-f", tmpContainer).Run()
@@ -243,6 +251,11 @@ func buildAndRunContainerHybrid(repoPath, containerName string) (int, int, error
 	)
 	finalCmd.Stdout = os.Stdout
 	finalCmd.Stderr = os.Stderr
+	// FUTURE: if docker bind fails here, hostPort was already reserved
+	// (ports doc + cloud firewall rule) but is never actually bound to a
+	// container — the reservation stays "used" forever. Wrap this function
+	// with a `bound bool` + defer db.ReleasePort so failures return the
+	// reservation to the recycle pool.
 	if err := finalCmd.Run(); err != nil {
 		return 0, 0, fmt.Errorf("docker final run failed: %w", err)
 	}
@@ -273,6 +286,9 @@ func FullPipeline(username, repoPath, envContent, startCommand string) (int, int
 	// Step 4: Derive container name from repo
 	repoName := filepath.Base(repoPath)
 	// containerName := fmt.Sprintf("autoship-%s-%s", username, strings.ToLower(repoName))
+	// FUTURE: Unix() is seconds resolution — two deploys of the same repo
+	// landing in the same wall-clock second collide on container name.
+	// Switch to UnixNano, or thread the deployment's Mongo _id through.
 	timestamp := time.Now().Unix()
 	containerName := fmt.Sprintf("autoship-%s-%s-%d", username, strings.ToLower(repoName), timestamp)
 

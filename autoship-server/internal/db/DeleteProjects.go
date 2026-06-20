@@ -10,6 +10,6 @@ func DeleteProjectByContainerName(containerName string) error {
 	collection := GetCollection("projects")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	_, err := collection.DeleteOne(ctx, bson.M{"containername": containerName})
+	_, err := collection.DeleteOne(ctx, bson.M{"container_name": containerName})
 	return err
 }

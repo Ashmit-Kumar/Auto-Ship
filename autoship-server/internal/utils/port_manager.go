@@ -3,133 +3,139 @@ package utils
 import (
 	"context"
 	"fmt"
-	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/cloud"
-	"github.com/joho/godotenv"
 	"log"
 	"net"
-	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/cloud"
+	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/config"
+	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/db"
+	"github.com/Ashmit-Kumar/Auto-Ship/autoship-server/internal/models"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var (
-	MongoURI       string
-	DatabaseName   string
-	CollectionName string
-)
+// maxRecycleAttempts bounds how many "available" docs we'll try before
+// giving up on the recycle pool and falling through to a fresh allocation.
+// Protects against an unbounded loop if the firewall is broken and every
+// reauth fails (we'd just keep marking docs available and re-picking them).
+const maxRecycleAttempts = 5
 
-func init() {
-	_ = godotenv.Load(".env") // Loads .env file from current directory (ignore error if not present)
-
-	MongoURI = os.Getenv("MONGO_URI")
-	DatabaseName = os.Getenv("MONGO_DB_NAME")
-	CollectionName = os.Getenv("MONGO_DB_COLLECTION")
-}
-
-// // GetOrReserveValidFreePort finds an unused port and opens it in the EC2 security group
-// func GetOrReserveValidFreePort(containerName string) (int, error) {
-// 	ctx := context.Background()
-
-// 	// 1. Connect to MongoDB
-// 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(MongoURI))
-// 	if err != nil {
-// 		return 0, err
-// 	}
-// 	defer client.Disconnect(ctx)
-
-// 	coll := client.Database(DatabaseName).Collection(CollectionName)
-
-// 	// 2. Search for an available port in DB
-// 	var portDoc struct {
-// 		Port int `bson:"port"`
-// 	}
-// 	err = coll.FindOneAndUpdate(ctx, bson.M{"status": "available"}, bson.M{
-// 		"$set": bson.M{"status": "used", "containerName": containerName, "timestamp": time.Now()},
-// 	}).Decode(&portDoc)
-// 	if err == mongo.ErrNoDocuments {
-// 		// No free ports in DB; optionally generate a new one
-// 		return 0, fmt.Errorf("no free ports in DB")
-// 	} else if err != nil {
-// 		return 0, err
-// 	}
-
-// 	// 3. Check if it's free on this machine
-// 	if !IsPortAvailable(portDoc.Port) {
-// 		// Update status back to "available"
-// 		_, _ = coll.UpdateOne(ctx, bson.M{"port": portDoc.Port}, bson.M{"$set": bson.M{"status": "available"}})
-// 		return GetOrReserveValidFreePort(containerName)
-// 	}
-
-// 	// 4. Open port in EC2 Security Group
-// 	if err := AuthorizeEC2Port(portDoc.Port); err != nil {
-// 		log.Printf("Failed to open port %d in SG: %v", portDoc.Port, err)
-// 		return 0, err
-// 	}
-
-// 	return portDoc.Port, nil
-// }
-
+// GetOrReserveValidFreePort allocates a host port for a new container.
+//
+// Two-stage strategy:
+//
+//  1. Recycle pool — try the lowest-numbered doc with status "available"
+//     (set by db.ReleasePort when a previous container was deleted). The
+//     cloud firewall rule from the previous owner is intentionally left
+//     alive; reauthorize is a no-op (AWS dedupes by description, Azure by
+//     rule name), so recycling skips the NSG/SG round-trip in the common
+//     case.
+//  2. Fresh allocation — watermark scan above the highest port currently
+//     in the collection, insert a new doc atomically. Unique index on
+//     `port` (db.EnsurePortsIndex) makes concurrent claims for the same
+//     port fail with a duplicate-key error; the loser falls through.
+//
+// Mongo client: reuses the long-lived pooled client from db.GetCollection
+// rather than opening a fresh connection per call.
 func GetOrReserveValidFreePort(containerName string) (int, error) {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(MongoURI))
-	if err != nil {
-		return 0, err
+	coll := db.GetCollection(config.Get().MongoCollection)
+
+	// Stage 1: try to recycle a freed port.
+	for attempt := 0; attempt < maxRecycleAttempts; attempt++ {
+		var recycled models.PortMapping
+		err := coll.FindOneAndUpdate(
+			ctx,
+			bson.M{"status": "available"},
+			bson.M{"$set": bson.M{
+				"status":        "used",
+				"containerName": containerName,
+				"timestamp":     time.Now(),
+			}},
+			options.FindOneAndUpdate().SetSort(bson.D{{Key: "port", Value: 1}}),
+		).Decode(&recycled)
+
+		if err == mongo.ErrNoDocuments {
+			break // nothing recyclable; fall through to fresh allocation
+		}
+		if err != nil {
+			return 0, fmt.Errorf("failed to claim recyclable port: %w", err)
+		}
+
+		if !IsPortAvailable(recycled.Port) {
+			// Doc says available but the OS port is bound by something else.
+			// Prune the phantom and try the next available doc.
+			log.Printf("Recycled port %d not OS-free; pruning stale entry", recycled.Port)
+			_, _ = coll.DeleteOne(ctx, bson.M{"_id": recycled.ID})
+			continue
+		}
+
+		if err := cloud.Get().AuthorizePort(recycled.Port); err != nil {
+			log.Printf("Failed to re-authorize recycled port %d: %v", recycled.Port, err)
+			// Put it back in the available pool — the cloud problem is likely
+			// transient and a later allocation should try again.
+			_, _ = coll.UpdateOne(ctx,
+				bson.M{"_id": recycled.ID},
+				bson.M{"$set": bson.M{
+					"status":    "available",
+					"timestamp": time.Now(),
+				}},
+			)
+			continue
+		}
+		return recycled.Port, nil
 	}
-	defer client.Disconnect(ctx)
 
-	coll := client.Database(DatabaseName).Collection(CollectionName)
-
-	// Step 1: Get the latest used or available port
+	// Stage 2: nothing recyclable worked. Scan above the watermark and insert.
 	var portDoc struct {
 		Port int `bson:"port"`
 	}
-	opts := options.FindOne().SetSort(bson.D{{"port", -1}})
-	err = coll.FindOne(ctx, bson.M{}, opts).Decode(&portDoc)
-	fmt.Println("Latest port found in DB:", portDoc.Port)
+	opts := options.FindOne().SetSort(bson.D{{Key: "port", Value: -1}})
+	err := coll.FindOne(ctx, bson.M{}, opts).Decode(&portDoc)
 	if err == mongo.ErrNoDocuments {
-		// No ports found, start from default
-		fmt.Println("No ports found in DB, starting from default port 2000")
-		portDoc.Port = 1999 // default fallback
+		log.Println("No ports found in DB, starting from 2000")
+		portDoc.Port = 1999
 	} else if err != nil {
 		return 0, fmt.Errorf("failed to find latest port: %w", err)
 	}
-	startPort := portDoc.Port + 1 // default fallback
-	// if err == nil {
-	// 	startPort = portDoc.Port+1 // start from the next port
-	// }
+	startPort := portDoc.Port + 1
 
-	// Step 2: Try finding a free port by incrementing
 	for port := startPort; port <= 65535; port++ {
-		if IsPortAvailable(port) {
-			// Try reserving in DB (ensure atomicity in multi-user environments)
-			_, err := coll.UpdateOne(ctx,
-				bson.M{"port": port, "status": bson.M{"$ne": "used"}}, // <--- important
-				bson.M{
-					"$setOnInsert": bson.M{
-						"port":          port,
-						"status":        "used",
-						"containerName": containerName,
-						"timestamp":     time.Now(),
-					},
-				},
-				options.Update().SetUpsert(true),
-			)
-			if err == nil {
-				// Open the port in the active cloud provider's firewall.
-				if err := cloud.Get().AuthorizePort(port); err != nil {
-					log.Printf("Failed to open port %d in firewall: %v", port, err)
-					continue
-				}
-				return port, nil
-			}
+		if !IsPortAvailable(port) {
+			continue
 		}
+		_, err := coll.InsertOne(ctx, models.PortMapping{
+			Port:          port,
+			ContainerPort: 0,
+			Status:        "used",
+			ContainerName: containerName,
+			Timestamp:     time.Now(),
+		})
+		if err != nil {
+			if mongo.IsDuplicateKeyError(err) {
+				continue
+			}
+			return 0, fmt.Errorf("failed to reserve port %d: %w", port, err)
+		}
+		if err := cloud.Get().AuthorizePort(port); err != nil {
+			log.Printf("Failed to open port %d in firewall: %v", port, err)
+			if _, delErr := coll.DeleteOne(ctx, bson.M{
+				"port":          port,
+				"containerName": containerName,
+			}); delErr != nil {
+				log.Printf("Failed to release Mongo reservation for port %d: %v", port, delErr)
+			}
+			continue
+		}
+		return port, nil
 	}
 
 	return 0, fmt.Errorf("no free ports found")
@@ -144,7 +150,7 @@ func IsPortAvailable(port int) bool {
 	return true
 }
 
-// tryDefaultPorts checks common default ports like 3000, 5000, 8080 inside the container.
+// tryDefaultPorts checks common default ports inside the container.
 func tryDefaultPorts(containerID string) (int, error) {
 	defaultPorts := []int{3000, 5000, 8080, 80, 8000}
 	for _, port := range defaultPorts {
@@ -161,18 +167,14 @@ func tryDefaultPorts(containerID string) (int, error) {
 func detectPortWithNetstat(containerID string) (int, error) {
 	fmt.Println("Running netstat inside the container to detect open ports... ", containerID)
 
-	// Sleep for few seconds to ensure the container is fully up
-	time.Sleep(5 * time.Second) // <-- wait for the container to be fully up
+	time.Sleep(5 * time.Second) // wait for the container to be fully up
 
-	// Execute netstat command inside the container
 	cmd := exec.Command("docker", "exec", containerID, "netstat", "-tuln")
 	if err := cmd.Run(); err != nil {
 		return 0, fmt.Errorf("failed to exec netstat: %w", err)
 	}
-	// output, err := cmd.Output()
-	// fmt.Println("Inspecting line:", line)
-	output, err := cmd.CombinedOutput()              // <-- not just Output()
-	fmt.Println("Netstat Output:\n", string(output)) // <-- helpful to print it
+	output, err := cmd.CombinedOutput()
+	fmt.Println("Netstat Output:\n", string(output))
 	if err != nil {
 		return 0, fmt.Errorf("failed to exec netstat: %w", err)
 	}
@@ -183,11 +185,10 @@ func detectPortWithNetstat(containerID string) (int, error) {
 		if line == "" {
 			continue
 		}
-		fmt.Println("Inspecting line:", line) // <-- print each line for debugging
-		// Example line: "tcp        0      0 0.0.0.0:8080"
+		fmt.Println("Inspecting line:", line)
 		fields := strings.Fields(line)
 		if len(fields) >= 4 && (strings.HasPrefix(fields[0], "tcp") || strings.HasPrefix(fields[0], "udp")) {
-			addr := fields[3] // usually 0.0.0.0:8080
+			addr := fields[3]
 			if parts := strings.Split(addr, ":"); len(parts) > 1 {
 				portStr := parts[len(parts)-1]
 				if port, err := strconv.Atoi(portStr); err == nil {
@@ -200,14 +201,11 @@ func detectPortWithNetstat(containerID string) (int, error) {
 }
 
 func DetectExposedPort(containerID string) (int, error) {
-	// Try default common ports first
 	fmt.Println("Detecting Exposed Port using default ports... ", containerID)
 	if port, err := tryDefaultPorts(containerID); err == nil {
 		return port, nil
 	}
 	fmt.Println("No default port matched, trying dynamic detection...")
-	fmt.Println("Detecting port using netstat inside the container... ", containerID)
-	// Fallback to dynamic detection using netstat
 	return detectPortWithNetstat(containerID)
 }
 
